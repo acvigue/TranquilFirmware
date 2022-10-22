@@ -1,6 +1,9 @@
 // Auto Dimming LED Strip
 // Matt Grammes 2018
 
+// Modified by Aiden Vigue - 2022
+// -> Switch to WS2812-based LED strip.
+
 #include "LedStrip.h"
 #include "Arduino.h"
 #include "ConfigNVS.h"

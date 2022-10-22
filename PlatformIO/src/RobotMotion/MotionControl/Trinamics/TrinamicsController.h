@@ -197,7 +197,7 @@ private:
     static const int MIN_STEP_DIST_FOR_NEXT_BLOCK_START_DEFAULT = 500;
 
     // TMC chips
-    static const int MAX_TMC2130 = 3;
+    static const int MAX_TMC2130 = 2;
     static constexpr int MAX_TMC5072 = 2;
     static constexpr int MAX_TMC_DRIVERS_PER_CHIP = 2;
 
@@ -284,26 +284,9 @@ private:
     // Min step distance for next block start
     int32_t _axisMinDistForNextBlockStart[RobotConsts::MAX_AXES];
 
-    // SPI
-    int _miso;
-    int _mosi;
-    int _sck;
-
     // un-multiplexed chip selects
-    int _cs1;
-    int _cs2;
-    int _cs3;
-
-    // multiplexer pins and chip select mux values
-    int _mux1;
-    int _mux2;
-    int _mux3;
-    int _muxCS1;
-    int _muxCS2;
-    int _muxCS3;
-
-    // SPI controller
-    SPIClass* _pVSPI;
+    int _tx1;
+    int _tx2;
 
     static constexpr uint32_t TRINAMIC_TIMER_PERIOD_US = 500;
     static constexpr double TRINAMIC_CLOCK_FACTOR = 75.0;

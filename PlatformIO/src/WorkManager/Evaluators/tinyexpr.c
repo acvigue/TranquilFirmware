@@ -118,7 +118,7 @@ static double e() { return 2.71828182845904523536; }
 static double minfn(double a, double b) { return a < b ? a : b; }
 static double maxfn(double a, double b) { return a < b ? b : a; }
 
-static double random() { return rand() / ((double)RAND_MAX); };
+static double randomx() { return rand() / ((double)RAND_MAX); };
 
 static const te_variable functions[] = {
 	/* must be in alphabetical order */
@@ -148,7 +148,7 @@ static const te_variable functions[] = {
 	{ "min", minfn,    TE_FUNCTION2 | TE_FLAG_PURE, 0 },
 	{ "pi", pi,        TE_FUNCTION0 | TE_FLAG_PURE, 0 },
 	{ "pow", pow,      TE_FUNCTION2 | TE_FLAG_PURE, 0 },
-	{ "random",random, TE_FUNCTION0 | TE_FLAG_PURE, 0 },
+	{ "random",randomx, TE_FUNCTION0 | TE_FLAG_PURE, 0 },
 	{ "round", round,  TE_FUNCTION1 | TE_FLAG_PURE, 0 },
 	{ "sin", sin,      TE_FUNCTION1 | TE_FLAG_PURE, 0 },
 	{ "sinh", sinh,    TE_FUNCTION1 | TE_FLAG_PURE, 0 },

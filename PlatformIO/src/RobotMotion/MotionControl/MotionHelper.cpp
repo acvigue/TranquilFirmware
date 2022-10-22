@@ -25,7 +25,6 @@ MotionHelper::MotionHelper() :
     // Clear axis current location
     _lastCommandedAxisPos.clear();
     _rampGenerator.resetTotalStepPosition();
-    _trinamicsController.resetTotalStepPosition();
     // Coordinate conversion management
     _ptToActuatorFn = NULL;
     _actuatorToPtFn = NULL;
@@ -99,8 +98,6 @@ void MotionHelper::configure(const char *robotConfigJSON)
         {
             // Configure ramp generator - motors and end-stops
             _rampGenerator.configureAxis(axisIdx, axisJSON.c_str());
-            // Configure ramp generator - motors and end-stops
-            _trinamicsController.configureAxis(axisIdx, axisJSON.c_str());
         }
     }
 
@@ -118,12 +115,11 @@ void MotionHelper::configure(const char *robotConfigJSON)
     _motorEnabler.configure(robotGeom.c_str());
 
     // Start motion actuator
-    _rampGenerator.configure(!_trinamicsController.isRampGenerator());
+    _rampGenerator.configure(true);
 
     // Clear motion info
     _lastCommandedAxisPos.clear();
     _rampGenerator.resetTotalStepPosition();
-    _trinamicsController.resetTotalStepPosition();
 }
 
 // Check if a command can be accepted into the motion pipeline
@@ -175,10 +171,7 @@ void MotionHelper::setCurPosActualPosition()
     // ensure any final step is completed
     delayMicroseconds(100);
     AxisInt32s actuatorPos;
-    if (_trinamicsController.isRampGenerator())
-        _trinamicsController.getTotalStepPosition(actuatorPos);
-    else
-        _rampGenerator.getTotalStepPosition(actuatorPos);
+    _rampGenerator.getTotalStepPosition(actuatorPos);
     AxisFloats curPosMM;
     if (_actuatorToPtFn)
         _actuatorToPtFn(actuatorPos, curPosMM, _lastCommandedAxisPos, _axesParams);
@@ -208,10 +201,7 @@ void MotionHelper::getCurStatus(RobotCommandArgs &args)
 {
     // Get current position
     AxisInt32s curActuatorPos;
-    if (_trinamicsController.isRampGenerator())
-        _trinamicsController.getTotalStepPosition(curActuatorPos);
-    else
-        _rampGenerator.getTotalStepPosition(curActuatorPos);
+    _rampGenerator.getTotalStepPosition(curActuatorPos);
     args.setPointSteps(curActuatorPos);
     // Use reverse kinematics to get location
     AxisFloats curMMPos;
@@ -440,9 +430,6 @@ void MotionHelper::service()
     // motion is handled by ISR
     _rampGenerator.process();
 
-    // Process for trinamic devices
-    _trinamicsController.process();
-
     // Process any split-up blocks to be added to the pipeline
     blocksToAddProcess();
 
@@ -464,7 +451,6 @@ void MotionHelper::setCurPositionAsHome(int axisIdx)
     _lastCommandedAxisPos._axisPositionMM.setVal(axisIdx, _axesParams.getHomeOffsetVal(axisIdx));
     _lastCommandedAxisPos._stepsFromHome.setVal(axisIdx, _axesParams.gethomeOffSteps(axisIdx));
     _rampGenerator.setTotalStepPosition(axisIdx, _axesParams.gethomeOffSteps(axisIdx));
-    _trinamicsController.setTotalStepPosition(axisIdx, _axesParams.gethomeOffSteps(axisIdx));
 #ifdef DEBUG_MOTION_HELPER
     Log.trace("%ssetCurPosAsHome curMM X%F Y%F Z%F steps %d,%d,%d\n", MODULE_PREFIX,
                 _lastCommandedAxisPos._axisPositionMM.getVal(0),
