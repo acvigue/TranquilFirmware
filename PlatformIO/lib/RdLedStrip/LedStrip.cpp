@@ -49,7 +49,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
     if (sensorStr.length() != 0)
         sensorPin = ConfigPinMap::getPinFromName(sensorStr.c_str());
 
-    Log.notice("%sLED pin %d Sensor pin %d\n", MODULE_PREFIX, ledPin, sensorPin);
+    Log.notice("%sLED pin %d Sensor pin %d count %d\n", MODULE_PREFIX, ledPin, sensorPin, ledCount);
     // Sensor pin isn't necessary for operation.
     if (ledPin == -1)
         return;
@@ -57,7 +57,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
     // Setup led pin
     if (_isSetup && (ledPin != _ledPin))
     {
-        ledcDetachPin(_ledPin);
+
     }
     else
     {
@@ -65,6 +65,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
         _ledCount = ledCount;
 
         //TODO: initialize ws2812fx
+         Log.info("init ws2812fx");
         _ws2812fx = new WS2812FX(_ledCount, _ledPin, NEO_GRB + NEO_KHZ800);
         _ws2812fx->init();
     }
@@ -210,10 +211,11 @@ void LedStrip::service()
 
     if (ledConfigChanged) {
         ledConfigChanged = false;
-
+        Log.info("settingColor, setting Brightness, setMode");
         _ws2812fx->setColor(_ws2812fx->Color(_redVal, _greenVal, _blueVal));
         _ws2812fx->setBrightness(_ledBrightness);
         _ws2812fx->setMode(_effectID);
+        _ws2812fx->start();
     }
 
     _ws2812fx->service();
