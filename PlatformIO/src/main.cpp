@@ -158,7 +158,7 @@ RestAPISystem restAPISystem(wifiManager, mqttManager,
                             systemType, systemVersion);
 
 // Config for LED Strip
-ConfigNVS ledStripConfig("ledStrip", 100);
+ConfigNVS ledStripConfig("ledStrip", 200);
 
 // LED Strip
 #include "LedStrip.h"

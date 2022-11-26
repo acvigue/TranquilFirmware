@@ -7,6 +7,7 @@
 #include "LedStrip.h"
 #include "Arduino.h"
 #include "ConfigNVS.h"
+#include <WS2812fx.h>
 
 static const char* MODULE_PREFIX = "LedStrip: ";
 
@@ -15,7 +16,6 @@ LedStrip::LedStrip(ConfigBase &ledNvValues) : _ledNvValues(ledNvValues)
     _isSetup = false;
     _isSleeping = false;
     _ledPin = -1;
-    _sensorPin = -1;
 }
 
 void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
@@ -41,6 +41,8 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
     if (pinStr.length() != 0)
         ledPin = ConfigPinMap::getPinFromName(pinStr.c_str());
 
+    int ledCount = ledConfig.getLong("ledCount", 0);
+
     // Ambient Light Sensor Pin
     String sensorStr = ledConfig.getString("sensorPin", "");
     int sensorPin = -1;
@@ -60,8 +62,11 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
     else
     {
         _ledPin = ledPin;
-        ledcSetup(LED_STRIP_LEDC_CHANNEL, LED_STRIP_PWM_FREQ, LED_STRIP_LEDC_RESOLUTION);
-        ledcAttachPin(_ledPin, LED_STRIP_LEDC_CHANNEL);
+        _ledCount = ledCount;
+
+        //TODO: initialize ws2812fx
+        _ws2812fx = new WS2812FX(_ledCount, _ledPin, NEO_GRB + NEO_KHZ800);
+        _ws2812fx->init();
     }
 
     // Setup the sensor
@@ -79,21 +84,32 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
         Log.trace("%sNo LED Data Found in NV Storge, Defaulting\n", MODULE_PREFIX);
         // Default to LED On, Half Brightness
         _ledOn = true;
-        _ledValue = 0x7f;
+        _ledBrightness = 0x7f;
+        _effectSpeed = 50;
         _autoDim = false;
+        _redVal = 0xcc;
+        _greenVal = 0xcc;
+        _blueVal = 0xcc;
+        _effectID = 0;
         updateNv();
     } else {
         _ledOn = _ledNvValues.getLong("ledOn", 0) == 1;
-        _ledValue = _ledNvValues.getLong("ledValue", 0xFF);
+        _ledBrightness = _ledNvValues.getLong("ledBrightness", 50);
         _autoDim = _ledNvValues.getLong("autoDim", 0) == 1;
-        Log.trace("%sLED Setup from JSON: %s On: %d, Value: %d, Auto Dim: %d\n", MODULE_PREFIX, 
-                    ledStripConfigStr.c_str(), _ledOn, _ledValue, _autoDim);
+        _effectSpeed = _ledNvValues.getLong("effectSpeed", 0);
+        _effectID = _ledNvValues.getLong("effectID", 0);
+        _redVal = _ledNvValues.getLong("redVal", 127);
+        _greenVal = _ledNvValues.getLong("greenVal", 127);
+        _blueVal = _ledNvValues.getLong("blueVal", 127);
+
+        Log.trace("%sLED Setup from JSON: %s On: %d, Brightness: %d, Auto Dim: %d, Effect: %d, Color R: %d, G: %d, B: %d\n", MODULE_PREFIX, 
+                    ledStripConfigStr.c_str(), _ledOn, _ledBrightness, _autoDim, _effectID, _redVal, _greenVal, _blueVal);
     }
 
     _isSetup = true;
     // Trigger initial write
     ledConfigChanged = true;
-    Log.trace("%sLED Configured: On: %d, Value: %d, AutoDim: %d\n", MODULE_PREFIX, _ledOn, _ledValue, _autoDim);
+    Log.trace("%sLED Configured: On: %d, Value: %d, AutoDim: %d\n", MODULE_PREFIX, _ledOn, _ledBrightness, _autoDim);
 }
 
 void LedStrip::updateLedFromConfig(const char * pLedJson) {
@@ -104,16 +120,44 @@ void LedStrip::updateLedFromConfig(const char * pLedJson) {
         _ledOn = ledOn;
         changed = true;
     }
-    byte ledValue = RdJson::getLong("ledValue", 0, pLedJson);
-    if (ledValue != _ledValue) {
-        _ledValue = ledValue;
+    byte ledBrightness = RdJson::getLong("ledBrightness", 0, pLedJson);
+    if (ledBrightness != _ledBrightness) {
+        _ledBrightness = ledBrightness;
         changed = true;
     }
     boolean autoDim = RdJson::getLong("autoDim", 0, pLedJson) == 1;
     if (autoDim != _autoDim) {
-        // TODO Never Enable Auto Dim
-        //_autoDim = autoDim;
-        _autoDim = false;
+        _autoDim = autoDim;
+        changed = true;
+    }
+    int effectID = RdJson::getLong("effectID", 0, pLedJson);
+    if (effectID != _effectID) {
+        
+        _effectID = effectID;
+        changed = true;
+    }
+    int effectSpeed = RdJson::getLong("effectSpeed", 0, pLedJson);
+    if (effectSpeed != _effectSpeed) {
+        
+        _effectSpeed = effectSpeed;
+        changed = true;
+    }
+    int redVal = RdJson::getLong("redVal", 0, pLedJson);
+    if (redVal != _redVal) {
+        
+        _redVal = redVal;
+        changed = true;
+    }
+    int greenVal = RdJson::getLong("greenVal", 0, pLedJson);
+    if (greenVal != _greenVal) {
+        
+        _greenVal = greenVal;
+        changed = true;
+    }
+    int blueVal = RdJson::getLong("blueVal", 0, pLedJson);
+    if (blueVal != _blueVal) {
+        
+        _blueVal = blueVal;
         changed = true;
     }
 
@@ -134,14 +178,13 @@ void LedStrip::service()
     // If the switch is off or sleeping, turn off the led
     if (!_ledOn || _isSleeping)
     {
-        _ledValue = 0x0;
+        _ledBrightness = 0x0;
     }
     else
     {
         // TODO Auto Dim isn't working as expected - this should never go enabled right now
         // Check if we need to read and evaluate the light sensor
-        if (_autoDim)
-        {
+        if (_autoDim) {
             if (_sensorPin != -1) {
                 sensorValues[sensorReadingCount++ % NUM_SENSOR_VALUES] = analogRead(_sensorPin);
                 uint16_t sensorAvg = LedStrip::getAverageSensorReading();
@@ -156,9 +199,9 @@ void LedStrip::service()
                     ledBrightnessInt = 255;
                     Log.error("%sAverage Sensor Value over max!\n", MODULE_PREFIX);
                 }
-                byte ledValue = ledBrightnessInt;
-                if (_ledValue != ledValue) {
-                    _ledValue = ledValue;
+                byte ledBrightness = ledBrightnessInt;
+                if (_ledBrightness != ledBrightness) {
+                    _ledBrightness = ledBrightness;
                     updateNv();
                 }
             }
@@ -167,9 +210,13 @@ void LedStrip::service()
 
     if (ledConfigChanged) {
         ledConfigChanged = false;
-        Log.trace("Writing LED Value: 0x%x\n", _ledValue);
-        ledcWrite(LED_STRIP_LEDC_CHANNEL, _ledValue);
+
+        _ws2812fx->setColor(_ws2812fx->Color(_redVal, _greenVal, _blueVal));
+        _ws2812fx->setBrightness(_ledBrightness);
+        _ws2812fx->setMode(_effectID);
     }
+
+    _ws2812fx->service();
 }
 
 void LedStrip::configChanged()
@@ -186,8 +233,23 @@ void LedStrip::updateNv()
     jsonStr += "\"ledOn\":";
     jsonStr += _ledOn ? "1" : "0";
     jsonStr += ",";
-    jsonStr += "\"ledValue\":";
-    jsonStr += _ledValue;
+    jsonStr += "\"ledBrightness\":";
+    jsonStr += _ledBrightness;
+    jsonStr += ",";
+    jsonStr += "\"effectSpeed\":";
+    jsonStr += _effectSpeed;
+    jsonStr += ",";
+    jsonStr += "\"effectID\":";
+    jsonStr += _effectID;
+    jsonStr += ",";
+    jsonStr += "\"redVal\":";
+    jsonStr += _redVal;
+    jsonStr += ",";
+    jsonStr += "\"greenVal\":";
+    jsonStr += _greenVal;
+    jsonStr += ",";
+    jsonStr += "\"blueVal\":";
+    jsonStr += _blueVal;
     jsonStr += ",";
     jsonStr += "\"autoDim\":";
     jsonStr += _autoDim ? "1" : "0";

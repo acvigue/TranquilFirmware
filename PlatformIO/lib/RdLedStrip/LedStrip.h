@@ -6,6 +6,7 @@
 #include "Utils.h"
 #include "ConfigNVS.h"
 #include "ConfigPinMap.h"
+#include <WS2812FX.h>
 
 class LedStrip
 {
@@ -29,11 +30,19 @@ private:
     bool _isSetup;
     bool _isSleeping;
     int _ledPin;
+    int _ledCount;
     int _sensorPin;
 
     bool _ledOn;
-    byte _ledValue = -1;
+    byte _ledBrightness = -1;
+    int _effectSpeed = 0;
     bool _autoDim = false;
+
+    int _effectID;
+    int _redVal;
+    int _greenVal;
+    int _blueVal;
+    WS2812FX *_ws2812fx;
     bool ledConfigChanged = false;
     
     int sensorReadingCount = 0;
@@ -43,9 +52,4 @@ private:
 
     // Store a number of sensor readings for smoother transitions
     uint16_t sensorValues[NUM_SENSOR_VALUES];
-
-    // LEDC library controls
-    static const int LED_STRIP_PWM_FREQ = 7000;
-    static const int LED_STRIP_LEDC_CHANNEL = 0;
-    static const int LED_STRIP_LEDC_RESOLUTION = 8;
 };
