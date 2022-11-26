@@ -197,6 +197,14 @@ void debugLoopInfoCallback(String &infoStr)
 }
 DebugLoopTimer debugLoopTimer(10000, debugLoopInfoCallback);
 
+TaskHandle_t ledTask;
+
+void ledTaskHandler(void *parameter) {
+    for(;;) {
+        ledStrip.serviceStrip();
+    }
+}
+
 // Setup
 void setup()
 {
@@ -289,6 +297,15 @@ void setup()
 
     // Handle statup commands
     _workManager.handleStartupCommands();
+
+    xTaskCreatePinnedToCore(
+      ledTaskHandler, /* Function to implement the task */
+      "Task1", /* Name of the task */
+      10000,  /* Stack size in words */
+      NULL,  /* Task input parameter */
+      0,  /* Priority of the task */
+      &ledTask,  /* Task handle. */
+      0);
 }
 
 // Loop
