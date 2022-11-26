@@ -12,12 +12,14 @@ class LedStrip
 {
 public:
     LedStrip(ConfigBase &ledNvValues);
-    void setup(ConfigBase* pConfig, const char* ledStripName);
+    void setup(ConfigBase* pConfig, const char* ledStripName, void (*showFn)());
     void service();
-    void serviceStrip();
+    uint8_t * getPixelDataPointer();
+    uint16_t getNumBytes();
     void updateLedFromConfig(const char* pLedJson);
     const char* getConfigStrPtr();
     void setSleepMode(int sleep);
+    
 
 private:
     void configChanged();
@@ -44,6 +46,7 @@ private:
     int _greenVal;
     int _blueVal;
     WS2812FX *_ws2812fx;
+    void (*_showFn)(void) = NULL;
     bool ledConfigChanged = false;
     
     int sensorReadingCount = 0;

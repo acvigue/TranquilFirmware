@@ -8,6 +8,7 @@
 #include "Arduino.h"
 #include "ConfigNVS.h"
 #include <WS2812fx.h>
+#include "rmt_drv.h"
 
 static const char* MODULE_PREFIX = "LedStrip: ";
 
@@ -18,9 +19,11 @@ LedStrip::LedStrip(ConfigBase &ledNvValues) : _ledNvValues(ledNvValues)
     _ledPin = -1;
 }
 
-void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
+void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName, void (*showFn)())
 {
     _name = ledStripName;
+    _showFn = showFn;
+
     // Save config and register callback on config changed
     if (_pHwConfig == NULL)
     {
@@ -64,9 +67,11 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
         _ledPin = ledPin;
         _ledCount = ledCount;
 
-         Log.info("init ws2812fx");
+        Log.info("init ws2812fx");
         _ws2812fx = new WS2812FX(_ledCount, _ledPin, NEO_GRB + NEO_KHZ800);
         _ws2812fx->init();
+        _ws2812fx->setCustomShow(showFn);
+        rmt_tx_int(RMT_CHANNEL_1, _ws2812fx->getPin()); // assign ws2812fx to RMT channel 0
     }
 
     // Setup the sensor
@@ -216,17 +221,23 @@ void LedStrip::service()
         _ws2812fx->setMode(_effectID);
         _ws2812fx->start();
     }
+
+    _ws2812fx->service();
 }
 
-void LedStrip::serviceStrip() {
-    _ws2812fx->service();
+uint8_t * LedStrip::getPixelDataPointer() {
+    return _ws2812fx->getPixels();
+}
+
+uint16_t LedStrip::getNumBytes() {
+    return _ws2812fx->getNumBytes();
 }
 
 void LedStrip::configChanged()
 {
     // Reset config
     Log.trace("%sconfigChanged\n", MODULE_PREFIX);
-    setup(_pHwConfig, _name.c_str());
+    setup(_pHwConfig, _name.c_str(), _showFn);
 }
 
 void LedStrip::updateNv()

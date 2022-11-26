@@ -163,6 +163,7 @@ ConfigNVS ledStripConfig("ledStrip", 200);
 // LED Strip
 #include "LedStrip.h"
 LedStrip ledStrip(ledStripConfig);
+#include "rmt_drv.h"
 
 // Robot controller
 #include "RobotMotion/RobotController.h"
@@ -199,10 +200,10 @@ DebugLoopTimer debugLoopTimer(10000, debugLoopInfoCallback);
 
 TaskHandle_t ledTask;
 
-void ledTaskHandler(void *parameter) {
-    for(;;) {
-        ledStrip.serviceStrip();
-    }
+void customShowFn() {
+    uint8_t * pixels = ledStrip.getPixelDataPointer();
+    uint16_t numBytes = ledStrip.getNumBytes() + 1;
+    rmt_write_sample(RMT_CHANNEL_1, pixels, numBytes, false);
 }
 
 // Setup
@@ -273,7 +274,7 @@ void setup()
     ledStripConfig.setup();
 
     // Led Strip
-    ledStrip.setup(&robotConfig, "robotConfig/ledStrip");
+    ledStrip.setup(&robotConfig, "robotConfig/ledStrip", customShowFn);
 
     // Add debug blocks
     debugLoopTimer.blockAdd(0, "LoopTimer");
@@ -297,15 +298,6 @@ void setup()
 
     // Handle statup commands
     _workManager.handleStartupCommands();
-
-    xTaskCreatePinnedToCore(
-      ledTaskHandler, /* Function to implement the task */
-      "Task1", /* Name of the task */
-      10000,  /* Stack size in words */
-      NULL,  /* Task input parameter */
-      0,  /* Priority of the task */
-      &ledTask,  /* Task handle. */
-      0);
 }
 
 // Loop
