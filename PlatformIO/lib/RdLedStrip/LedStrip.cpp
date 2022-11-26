@@ -64,7 +64,6 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
         _ledPin = ledPin;
         _ledCount = ledCount;
 
-        //TODO: initialize ws2812fx
          Log.info("init ws2812fx");
         _ws2812fx = new WS2812FX(_ledCount, _ledPin, NEO_GRB + NEO_KHZ800);
         _ws2812fx->init();
@@ -217,7 +216,9 @@ void LedStrip::service()
         _ws2812fx->setMode(_effectID);
         _ws2812fx->start();
     }
+}
 
+void LedStrip::serviceStrip() {
     _ws2812fx->service();
 }
 

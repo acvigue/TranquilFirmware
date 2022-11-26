@@ -14,6 +14,7 @@ public:
     LedStrip(ConfigBase &ledNvValues);
     void setup(ConfigBase* pConfig, const char* ledStripName);
     void service();
+    void serviceStrip();
     void updateLedFromConfig(const char* pLedJson);
     const char* getConfigStrPtr();
     void setSleepMode(int sleep);
