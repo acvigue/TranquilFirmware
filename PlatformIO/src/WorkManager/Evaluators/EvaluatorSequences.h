@@ -27,6 +27,9 @@ public:
 
     // Is Busy
     bool isBusy();
+
+    //File Name
+    String fileName();
     
     // Check valid
     bool isValid(WorkItem& workItem);
@@ -53,6 +56,7 @@ private:
 
     // List of commands to add to workflow - delimited string
     String _commandList;
+    String _fileName;
 
     // Busy and current line
     int _inProgress;

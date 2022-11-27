@@ -218,6 +218,7 @@ void LedStrip::service()
         Log.info("settingColor, setting Brightness, setMode");
         _ws2812fx->setColor(_ws2812fx->Color(_redVal, _greenVal, _blueVal));
         _ws2812fx->setBrightness(_ledBrightness);
+        _ws2812fx->setSpeed(_effectSpeed);
         _ws2812fx->setMode(_effectID);
         _ws2812fx->start();
     }

@@ -19,6 +19,9 @@ public:
 
     // Is Busy
     bool isBusy();
+
+    //File name
+    String fileName();
     
     // Check valid
     bool isValid(WorkItem& workItem);
@@ -49,6 +52,8 @@ private:
 
     // File type
     int _fileType;
+
+    String _fileName;
 
     // Start of file handling
     bool _firstValidLineProcessed;

@@ -33,6 +33,12 @@ bool EvaluatorFiles::isBusy()
     return _inProgress;
 }
 
+//File name
+String EvaluatorFiles::fileName()
+{
+    return _fileName;
+}
+
 int EvaluatorFiles::getFileTypeFromExtension(String& fileName)
 {
     String fileExt = FileManager::getFileExtension(fileName);
@@ -66,6 +72,7 @@ bool EvaluatorFiles::execWorkItem(WorkItem& workItem)
 {
     // Form the file name
     String fileName = workItem.getString();
+    _fileName = fileName;
     int fileType = getFileTypeFromExtension(fileName);
     if (fileType == FILE_TYPE_UNKNOWN)
         return false;

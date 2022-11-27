@@ -76,6 +76,18 @@ void WorkManager::queryStatus(String &respStr)
         innerJsonStr += timeJsonStr;
     }
 
+    if(_evaluatorSequences.isBusy()) {
+        innerJsonStr += ",\"playlist\": true, \"playlistName\": \"";
+        innerJsonStr += _evaluatorSequences.fileName();
+        innerJsonStr += "\"";
+    }
+
+    if(_evaluatorFiles.isBusy()) {
+        innerJsonStr += ",\"file\": \"";
+        innerJsonStr += _evaluatorFiles.fileName();
+        innerJsonStr += "\"";
+    }
+
     // System information
     respStr = "{" + innerJsonStr + "}";
 }

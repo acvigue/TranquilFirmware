@@ -206,6 +206,12 @@ void customShowFn() {
     rmt_write_sample(RMT_CHANNEL_1, pixels, numBytes, false);
 }
 
+void ledTaskFunc(void * parameter) {
+    for(;;) {
+        ledStrip.service();
+    }
+}
+
 // Setup
 void setup()
 {
@@ -298,6 +304,15 @@ void setup()
 
     // Handle statup commands
     _workManager.handleStartupCommands();
+
+    xTaskCreatePinnedToCore(
+      ledTaskFunc, /* Function to implement the task */
+      "Task1", /* Name of the task */
+      10000,  /* Stack size in words */
+      NULL,  /* Task input parameter */
+      0,  /* Priority of the task */
+      &ledTask,  /* Task handle. */
+      0); /* Core where the task should run */
 }
 
 // Loop
@@ -383,12 +398,6 @@ void loop()
     debugLoopTimer.blockStart(13);
     _robotController.service();
     debugLoopTimer.blockEnd(13);
-
-    // Service the LED Strip
-    debugLoopTimer.blockStart(14);
-    ledStrip.service();
-    debugLoopTimer.blockEnd(14);
-
 }
 
 #endif // UNIT_TEST

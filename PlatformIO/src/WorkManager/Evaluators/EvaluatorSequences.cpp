@@ -44,6 +44,12 @@ bool EvaluatorSequences::isBusy()
     return _inProgress;
 }
 
+//Return sequence file name
+String EvaluatorSequences::fileName()
+{
+    return _fileName;
+}
+
 // Check if valid
 bool EvaluatorSequences::isValid(WorkItem& workItem)
 {
@@ -92,6 +98,7 @@ bool EvaluatorSequences::execWorkItem(WorkItem& workItem)
 {
     // Find the command info
     String fileName = workItem.getString();
+    _fileName = fileName;
     _commandList = _fileManager.getFileContents("", fileName, MAX_SEQUENCE_FILE_LEN);
     if (_commandList.length() > 0)
     {
