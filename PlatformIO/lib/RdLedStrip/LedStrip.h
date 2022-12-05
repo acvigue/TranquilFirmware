@@ -14,6 +14,7 @@ public:
     LedStrip(ConfigBase &ledNvValues);
     void setup(ConfigBase* pConfig, const char* ledStripName, void (*showFn)());
     void service();
+    void serviceStrip();
     uint8_t * getPixelDataPointer();
     uint16_t getNumBytes();
     void updateLedFromConfig(const char* pLedJson);

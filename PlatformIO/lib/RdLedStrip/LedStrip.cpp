@@ -222,7 +222,9 @@ void LedStrip::service()
         _ws2812fx->setMode(_effectID);
         _ws2812fx->start();
     }
+}
 
+void LedStrip::serviceStrip() {
     _ws2812fx->service();
 }
 

@@ -208,7 +208,7 @@ void customShowFn() {
 
 void ledTaskFunc(void * parameter) {
     for(;;) {
-        ledStrip.service();
+        ledStrip.serviceStrip();
     }
 }
 
@@ -305,6 +305,8 @@ void setup()
     // Handle statup commands
     _workManager.handleStartupCommands();
 
+
+    //Service LED strip.
     xTaskCreatePinnedToCore(
       ledTaskFunc, /* Function to implement the task */
       "Task1", /* Name of the task */
@@ -398,6 +400,11 @@ void loop()
     debugLoopTimer.blockStart(13);
     _robotController.service();
     debugLoopTimer.blockEnd(13);
+
+    // Service the LED strip
+    debugLoopTimer.blockStart(14);
+    ledStrip.service();
+    debugLoopTimer.blockEnd(14);
 }
 
 #endif // UNIT_TEST
