@@ -43,14 +43,13 @@ public:
 
     void enableMotors(bool en, bool timeout)
     {
-        // Log.trace("Enable %d, disable level %d, disable after time %F\n",
-        //							en, !_stepEnLev, _stepDisableSecs);
+        //Log.trace("Enable %d, disable level %d, disable after time %F\n", en, !_stepEnLev, _stepDisableSecs);
         if (en)
         {
             if (_stepEnablePin != -1)
             {
                 if (!_motorsAreEnabled)
-                    Log.notice("MotorEnabler: enabled, disable after idle %Fs\n", _stepDisableSecs);
+                    //Log.notice("MotorEnabler: enabled, disable after idle %Fs\n", _stepDisableSecs);
                 digitalWrite(_stepEnablePin, _stepEnLev);
             }
             _motorsAreEnabled = true;
@@ -77,9 +76,9 @@ public:
     void service()
     {
         // Check for motor enable timeout
-        if (_motorsAreEnabled && Utils::isTimeout(millis(), _motorEnLastMillis,
-                                                    (unsigned long)(_stepDisableSecs * 1000)))
+        if (_motorsAreEnabled && Utils::isTimeout(millis(), _motorEnLastMillis, (unsigned long)(_stepDisableSecs * 1000))) {
             enableMotors(false, true);
+        }
     }
 
 private:

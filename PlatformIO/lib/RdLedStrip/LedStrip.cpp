@@ -167,7 +167,7 @@ void LedStrip::updateLedFromConfig(const char * pLedJson) {
     }
 
     if (changed)
-        updateNv();
+        ledConfigChanged = true;
 }
 
 const char* LedStrip::getConfigStrPtr() {
@@ -207,7 +207,7 @@ void LedStrip::service()
                 byte ledBrightness = ledBrightnessInt;
                 if (_ledBrightness != ledBrightness) {
                     _ledBrightness = ledBrightness;
-                    updateNv();
+                    ledConfigChanged = true;
                 }
             }
         }
@@ -215,7 +215,7 @@ void LedStrip::service()
 
     if (ledConfigChanged) {
         ledConfigChanged = false;
-        Log.info("settingColor, setting Brightness, setMode");
+        updateNv();
         _ws2812fx->setColor(_ws2812fx->Color(_redVal, _greenVal, _blueVal));
         _ws2812fx->setBrightness(_ledBrightness);
         _ws2812fx->setSpeed(_effectSpeed);
@@ -274,7 +274,6 @@ void LedStrip::updateNv()
     _ledNvValues.setConfigData(jsonStr.c_str());
     _ledNvValues.writeConfig();
     Log.trace("%supdateNv() : wrote %s\n", MODULE_PREFIX, _ledNvValues.getConfigCStrPtr());
-    ledConfigChanged = true;
 }
 
 // Get the average sensor reading

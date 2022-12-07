@@ -352,22 +352,22 @@ void loop()
 
     // Service MQTT
     debugLoopTimer.blockStart(5);
-    mqttManager.service();
+    //mqttManager.service();
     debugLoopTimer.blockEnd(5);
 
     // Service OTA Update
     debugLoopTimer.blockStart(6);
-    otaUpdate.service();
+    //otaUpdate.service();
     debugLoopTimer.blockEnd(6);
 
     // Service NetLog
     debugLoopTimer.blockStart(7);
-    netLog.service(serialConsole.getXonXoff());
+    //netLog.service(serialConsole.getXonXoff());
     debugLoopTimer.blockStart(7);
 
     // Service NTP
     debugLoopTimer.blockStart(8);
-    ntpClient.service();
+    //ntpClient.service();
     debugLoopTimer.blockEnd(8);
 
     // Service command scheduler
@@ -377,7 +377,7 @@ void loop()
 
     // Service the status LED
     debugLoopTimer.blockStart(10);
-    wifiStatusLed.service();
+    //wifiStatusLed.service();
     debugLoopTimer.blockEnd(10);
 
     // Check for changes to status

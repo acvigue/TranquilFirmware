@@ -443,6 +443,8 @@ void MotionHelper::service()
     // Ensure motors enabled when homing or moving
     if (!_isPaused && ((_motionPipeline.count() > 0) || _motionHoming.isHomingInProgress())) {
         _motorEnabler.enableMotors(true, false);
+    } else {
+        _motorEnabler.service();
     }
 }
 
