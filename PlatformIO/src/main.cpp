@@ -97,6 +97,9 @@ MQTTManager mqttManager(wifiManager, restAPIEndpoints);
 #include <RdOTAUpdate.h>
 RdOTAUpdate otaUpdate;
 
+#define NO_OTA_PORT
+#include <ArduinoOTA.h>
+
 // Hardware config
 static const char *hwConfigJSON = {
     "{"
@@ -255,9 +258,6 @@ void setup()
     // NTP Client
     ntpClient.setup(&hwConfig, "ntpConfig", &ntpConfig);
 
-    // Firmware update
-    otaUpdate.setup(hwConfig, systemType, systemVersion);
-
     // Add API endpoints
     restAPISystem.setup(restAPIEndpoints);
     restAPIRobot.setup(restAPIEndpoints);
@@ -315,6 +315,12 @@ void setup()
       0,  /* Priority of the task */
       &ledTask,  /* Task handle. */
       0); /* Core where the task should run */
+
+    ArduinoOTA.setHostname("sandy");
+    ArduinoOTA.setMdnsEnabled(true);
+    //ArduinoOTA.setPassword("PLM");
+
+    ArduinoOTA.begin();
 }
 
 // Loop
@@ -357,7 +363,7 @@ void loop()
 
     // Service OTA Update
     debugLoopTimer.blockStart(6);
-    //otaUpdate.service();
+    ArduinoOTA.handle();
     debugLoopTimer.blockEnd(6);
 
     // Service NetLog
