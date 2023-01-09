@@ -8,6 +8,10 @@
 #include "ConfigPinMap.h"
 #include <WS2812FX.h>
 
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_TSL2561_U.h>
+
 class LedStrip
 {
 public:
