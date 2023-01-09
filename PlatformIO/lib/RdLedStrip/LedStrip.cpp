@@ -9,6 +9,9 @@
 #include "ConfigNVS.h"
 #include <WS2812fx.h>
 #include "rmt_drv.h"
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_TSL2561_U.h>
 
 static const char* MODULE_PREFIX = "LedStrip: ";
 
@@ -67,7 +70,6 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName, void (*showF
         _ledPin = ledPin;
         _ledCount = ledCount;
 
-        Log.info("init ws2812fx");
         _ws2812fx = new WS2812FX(_ledCount, _ledPin, NEO_GRB + NEO_KHZ800);
         _ws2812fx->init();
         _ws2812fx->setCustomShow(showFn);
@@ -77,9 +79,17 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName, void (*showF
     // Setup the sensor
     _sensorPin = sensorPin;
     if (_sensorPin != -1) {
-        pinMode(_sensorPin, INPUT);
-        for (int i = 0; i < NUM_SENSOR_VALUES; i++) {
-            sensorValues[i] = 0;
+        _tsl = new Adafruit_TSL2561_Unified(TSL2561_ADDR_FLOAT, 12345);
+
+        Wire.begin();
+        if(!_tsl->begin())
+        {
+            /* There was a problem detecting the TSL2561 ... check your connections */
+            Log.info("%sOoops, no TSL2561 detected ... Check your wiring or I2C ADDR!\n", MODULE_PREFIX);
+            _sensorPin = -1;
+        } else {
+            _tsl->enableAutoRange(true);            /* Auto-gain ... switches automatically between 1x and 16x */
+            _tsl->setIntegrationTime(TSL2561_INTEGRATIONTIME_13MS);      /* fast but low resolution */   
         }
     }
 
@@ -190,25 +200,31 @@ void LedStrip::service()
         // TODO Auto Dim isn't working as expected - this should never go enabled right now
         // Check if we need to read and evaluate the light sensor
         if (_autoDim) {
-            if (_sensorPin != -1) {
-                sensorValues[sensorReadingCount++ % NUM_SENSOR_VALUES] = analogRead(_sensorPin);
-                uint16_t sensorAvg = LedStrip::getAverageSensorReading();
-                // if (count % 100 == 0) {
-                // Log.trace("Ambient Light Avg Value: %d, reading count %d\n", sensorAvg, sensorReadingCount % NUM_SENSOR_VALUES);
-                
-                // Convert ambient light (int) to led value (byte)
-                int ledBrightnessInt = sensorAvg / 4;
+            if (_sensorPin != -1 && (millis() - _last_check_tsl_time > 500)) {
 
-                // This case shouldn't be hit
-                if (ledBrightnessInt > 255) {
-                    ledBrightnessInt = 255;
-                    Log.error("%sAverage Sensor Value over max!\n", MODULE_PREFIX);
+                sensors_event_t event;
+                _tsl->getEvent(&event);
+
+                byte ledBrightness;
+                if(event.light > 100) {
+                    //high brightness
+                    ledBrightness = 200;
+                } else if(event.light > 50) {
+                    //low brightness
+                    ledBrightness = 120;
+                } else if(event.light > 5) {
+                    //low brightness
+                    ledBrightness = 30;
+                } else {
+                    ledBrightness = 5;
                 }
-                byte ledBrightness = ledBrightnessInt;
+
                 if (_ledBrightness != ledBrightness) {
                     _ledBrightness = ledBrightness;
                     ledConfigChanged = true;
                 }
+
+                _last_check_tsl_time = millis();
             }
         }
     }
@@ -225,6 +241,11 @@ void LedStrip::service()
 }
 
 void LedStrip::serviceStrip() {
+
+    // Check if active
+    if (!_isSetup)
+        return;
+
     _ws2812fx->service();
 }
 

@@ -92,6 +92,8 @@ void TrinamicsController::configure(const char *configJSON)
 
             serial1.begin(115200, SERIAL_8N1, 34, _tx1);
             serial2.begin(115200, SERIAL_8N1, 34, _tx2);
+            driver_1.reset();
+            driver_2.reset();
 
             //driver_1.begin();
             driver_1.toff(_toff);                 // Enables driver in software

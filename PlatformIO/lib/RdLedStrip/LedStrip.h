@@ -47,8 +47,10 @@ private:
     int _greenVal;
     int _blueVal;
     WS2812FX *_ws2812fx;
+    Adafruit_TSL2561_Unified *_tsl;
     void (*_showFn)(void) = NULL;
     bool ledConfigChanged = false;
+    unsigned long _last_check_tsl_time = 0;
     
     int sensorReadingCount = 0;
 
