@@ -44,9 +44,9 @@ def writeFileContentsAsHex(filePath, outFile, minifyHtml, lineHexIndentChars, li
         shutil.copyfile(filePath, inFileName)
         # Try to minify using npm html-minifier
         print("Running minifier on", filePath)
-        rslt = subprocess.run(["html-minifier", filePath, "--minify-js", "--minify-css", "--remove-comments"], shell=True, stdout=subprocess.PIPE)
+        rslt = subprocess.run(["html-minifier", filePath, "--minify-js", "--minify-css", "--remove-comments"], stdout=subprocess.PIPE)
         if (rslt.returncode == 0):
-            # print(rslt)
+            print(rslt)
             with open(inFileName, "wb") as text_file:
                 text_file.write(rslt.stdout)
             print("Input HTML was",os.stat(filePath).st_size,"bytes, minified file is",os.stat(inFileName).st_size, "bytes")
