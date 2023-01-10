@@ -298,16 +298,12 @@ size_t NetLog::write(uint8_t ch)
                     host.trim();
                     if (host.length() != 0)
                     {
-                        String logStr = "<22>" + _systemName + ": " + String(_msgToLog.c_str());
+                        String logStr = String(_msgToLog.c_str());
                         if (WiFi.isConnected())
                         {
                             int udpBeginPacketRslt = Udp.beginPacket(host.c_str(), _papertrailPort);
                         Udp.write((const uint8_t *) logStr.c_str(), logStr.length());
                             int udpRslt = Udp.endPacket();
-                            Serial.printf("PAPERTRAIL %s %s %s %d %s\n",
-                                        udpBeginPacketRslt ? "BEGINOK" : "BEGINFAIL",
-                                        udpRslt ? "ENDOK" : "ENDFAIL", 
-                                        host.c_str(), _papertrailPort, logStr.c_str());
                         }
                     }
                 }
