@@ -6,7 +6,7 @@
 #include "Utils.h"
 #include "ConfigNVS.h"
 #include "ConfigPinMap.h"
-#include <WS2812FX.h>
+#include <FastLED.h>
 
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
@@ -16,20 +16,18 @@ class LedStrip
 {
 public:
     LedStrip(ConfigBase &ledNvValues);
-    void setup(ConfigBase* pConfig, const char* ledStripName, void (*showFn)());
+    void setup(ConfigBase* pConfig, const char* ledStripName);
     void service();
     void serviceStrip();
-    uint8_t * getPixelDataPointer();
-    uint16_t getNumBytes();
     void updateLedFromConfig(const char* pLedJson);
     const char* getConfigStrPtr();
     void setSleepMode(int sleep);
-    
 
 private:
     void configChanged();
     void updateNv();
     uint16_t getAverageSensorReading();
+    void effect_pride();
 
 private:
     String _name;
@@ -50,9 +48,8 @@ private:
     int _redVal;
     int _greenVal;
     int _blueVal;
-    WS2812FX *_ws2812fx;
+    CRGB *_leds;
     Adafruit_TSL2561_Unified *_tsl;
-    void (*_showFn)(void) = NULL;
     bool ledConfigChanged = false;
     unsigned long _last_check_tsl_time = 0;
     

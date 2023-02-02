@@ -7,11 +7,13 @@
 #include "LedStrip.h"
 #include "Arduino.h"
 #include "ConfigNVS.h"
-#include <WS2812fx.h>
-#include "rmt_drv.h"
+#include <FastLED.h>
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_TSL2561_U.h>
+
+#define FASTLED_ESP32_I2S true
+#define LED_PIN 4
 
 static const char* MODULE_PREFIX = "LedStrip: ";
 
@@ -22,10 +24,9 @@ LedStrip::LedStrip(ConfigBase &ledNvValues) : _ledNvValues(ledNvValues)
     _ledPin = -1;
 }
 
-void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName, void (*showFn)())
+void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
 {
     _name = ledStripName;
-    _showFn = showFn;
 
     // Save config and register callback on config changed
     if (_pHwConfig == NULL)
@@ -70,10 +71,9 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName, void (*showF
         _ledPin = ledPin;
         _ledCount = ledCount;
 
-        _ws2812fx = new WS2812FX(_ledCount, _ledPin, NEO_GRB + NEO_KHZ800);
-        _ws2812fx->init();
-        _ws2812fx->setCustomShow(showFn);
-        rmt_tx_int(RMT_CHANNEL_1, _ws2812fx->getPin()); // assign ws2812fx to RMT channel 0
+        _leds = new CRGB[_ledCount];
+        FastLED.addLeds<NEOPIXEL, LED_PIN>(_leds,_ledCount);
+        FastLED.show();
     }
 
     // Setup the sensor
@@ -232,11 +232,10 @@ void LedStrip::service()
     if (ledConfigChanged) {
         ledConfigChanged = false;
         updateNv();
-        _ws2812fx->setColor(_ws2812fx->Color(_redVal, _greenVal, _blueVal));
-        _ws2812fx->setBrightness(_ledBrightness);
-        _ws2812fx->setSpeed(_effectSpeed);
-        _ws2812fx->setMode(_effectID);
-        _ws2812fx->start();
+        if(_effectID == 0) {
+            FastLED.showColor(CRGB(_redVal, _greenVal, _blueVal));
+        }
+        FastLED.setBrightness(_ledBrightness);
     }
 }
 
@@ -246,22 +245,21 @@ void LedStrip::serviceStrip() {
     if (!_isSetup)
         return;
 
-    _ws2812fx->service();
-}
+    switch(_effectID) {
+        case 1: effect_pride(); break;
+        default: break;
+    }
 
-uint8_t * LedStrip::getPixelDataPointer() {
-    return _ws2812fx->getPixels();
-}
-
-uint16_t LedStrip::getNumBytes() {
-    return _ws2812fx->getNumBytes();
+    if(_effectID != 0) {
+        FastLED.show();
+    }
 }
 
 void LedStrip::configChanged()
 {
     // Reset config
     Log.trace("%sconfigChanged\n", MODULE_PREFIX);
-    setup(_pHwConfig, _name.c_str(), _showFn);
+    setup(_pHwConfig, _name.c_str());
 }
 
 void LedStrip::updateNv()
@@ -310,4 +308,47 @@ uint16_t LedStrip::getAverageSensorReading() {
 void LedStrip::setSleepMode(int sleep)
 {
     _isSleeping = sleep;
+}
+
+//MARK: EFFECTS
+
+void LedStrip::effect_pride() 
+{
+  static uint16_t sPseudotime = 0;
+  static uint16_t sLastMillis = 0;
+  static uint16_t sHue16 = 0;
+ 
+  uint8_t sat8 = beatsin88( 87, 220, 250);
+  uint8_t brightdepth = beatsin88( 341, 96, 224);
+  uint16_t brightnessthetainc16 = beatsin88( 203, (25 * 256), (40 * 256));
+  uint8_t msmultiplier = beatsin88(147, 23, 60);
+
+  uint16_t hue16 = sHue16;//gHue * 256;
+  uint16_t hueinc16 = beatsin88(113, 1, 3000);
+  
+  uint16_t ms = millis();
+  uint16_t deltams = ms - sLastMillis ;
+  sLastMillis  = ms;
+  sPseudotime += deltams * msmultiplier;
+  sHue16 += deltams * beatsin88( 400, 5,9);
+  uint16_t brightnesstheta16 = sPseudotime;
+  
+  for( uint16_t i = 0 ; i < _ledCount; i++) {
+    hue16 += hueinc16;
+    uint8_t hue8 = hue16 / 256;
+
+    brightnesstheta16  += brightnessthetainc16;
+    uint16_t b16 = sin16( brightnesstheta16  ) + 32768;
+
+    uint16_t bri16 = (uint32_t)((uint32_t)b16 * (uint32_t)b16) / 65536;
+    uint8_t bri8 = (uint32_t)(((uint32_t)bri16) * brightdepth) / 65536;
+    bri8 += (255 - brightdepth);
+    
+    CRGB newcolor = CHSV( hue8, sat8, bri8);
+    
+    uint16_t pixelnumber = i;
+    pixelnumber = (_ledCount-1) - pixelnumber;
+    
+    nblend( _leds[pixelnumber], newcolor, 64);
+  }
 }
