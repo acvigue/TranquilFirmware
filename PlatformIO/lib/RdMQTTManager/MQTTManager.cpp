@@ -9,8 +9,6 @@
 
 static const char* MODULE_PREFIX = "MQTTManager: ";
 
-#ifdef MQTT_USE_ASYNC_MQTT
-
 void MQTTManager::onMqttMessage(char *topic, byte *payload, unsigned int len)
 {
     Log.verbose("%srx topic: %s len %d\n", MODULE_PREFIX, topic, len);
@@ -30,7 +28,6 @@ void MQTTManager::onMqttMessage(char *topic, byte *payload, unsigned int len)
         }
     }
 }
-#endif
 
 void MQTTManager::setup(ConfigBase& hwConfig, ConfigBase *pConfig)
 {
