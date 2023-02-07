@@ -108,7 +108,7 @@ static const char *hwConfigJSON = {
     "\"mqttEnabled\":0,"
     "\"webServerEnabled\":1,"
     "\"webServerPort\":80,"
-    "\"OTAUpdate\":{\"enabled\":1,\"directOk\":1},"
+    "\"OTAUpdate\":{\"enabled\":0,\"directOk\":1},"
     "\"serialConsole\":{\"portNum\":0},"
     "\"commandSerial\":{\"portNum\":-1,\"baudRate\":115200},"
     "\"ntpConfig\":{\"ntpServer\":\"pool.ntp.org\", \"gmtOffsetSecs\":0, \"dstOffsetSecs\":0},"
@@ -126,10 +126,10 @@ ConfigNVS robotConfig("robot", 2000);
 ConfigNVS wifiConfig("wifi", 100);
 
 // Config for NTP
-ConfigNVS ntpConfig("ntp", 200);
+ConfigNVS ntpConfig("ntp", 100);
 
 // Config for MQTT
-ConfigNVS mqttConfig("mqtt", 200);
+ConfigNVS mqttConfig("mqtt", 300);
 
 // Config for network logging
 ConfigNVS netLogConfig("netLog", 200);

@@ -267,7 +267,7 @@ void RestAPISystem::apiMQTTSet(String &reqStr, String &respStr)
     // Get port
     int portNum = MQTTManager::DEFAULT_MQTT_PORT;
     String port = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 6);
-    if (port.length() == 0)
+    if (port.length() != 0)
         portNum = port.toInt();
     Log.trace("%sMQTTPort %d\n", MODULE_PREFIX, portNum);
     _mqttManager.setMQTTServer(server, inTopic, outTopic, username, password, portNum);
