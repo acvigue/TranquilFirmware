@@ -73,6 +73,9 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
 
         _leds = new CRGB[_ledCount];
         FastLED.addLeds<NEOPIXEL, LED_PIN>(_leds,_ledCount);
+        FastLED.setMaxPowerInVoltsAndMilliamps(5,1000);
+        FastLED.show();
+        FastLED.clear(true);
         FastLED.show();
     }
 
