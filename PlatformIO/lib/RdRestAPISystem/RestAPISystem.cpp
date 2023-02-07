@@ -258,13 +258,19 @@ void RestAPISystem::apiMQTTSet(String &reqStr, String &respStr)
     String outTopic = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 3);
     outTopic.replace("~", "/");
     Log.trace("%sMQTTOutTopic %s\n", MODULE_PREFIX, outTopic.c_str());
+    // Get mqtt username
+    String username = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 4);
+    Log.trace("%sMQTTUsername %s\n", MODULE_PREFIX, username.c_str());
+    // Get mqtt password
+    String password = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 5);
+    Log.trace("%sMQTTPassword %s\n", MODULE_PREFIX, password.c_str());
     // Get port
     int portNum = MQTTManager::DEFAULT_MQTT_PORT;
-    String port = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 4);
+    String port = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 6);
     if (port.length() == 0)
         portNum = port.toInt();
     Log.trace("%sMQTTPort %d\n", MODULE_PREFIX, portNum);
-    _mqttManager.setMQTTServer(server, inTopic, outTopic, portNum);
+    _mqttManager.setMQTTServer(server, inTopic, outTopic, username, password, portNum);
     Utils::setJsonBoolResult(respStr, true);
 }
 

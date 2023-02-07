@@ -3,16 +3,11 @@
 
 #pragma once
 
-#define MQTT_USE_ASYNC_MQTT 1
-
 #include "WiFiManager.h"
 #include "RestAPIEndpoints.h"
 #include "ConfigNVS.h"
-#ifdef MQTT_USE_ASYNC_MQTT
-#include <AsyncMqttClient.h>
-#else
 #include <PubSubClient.h>
-#endif
+#include <WiFiClientSecure.h>
 
 // #define STRESS_TEST_MQTT 1
 
@@ -35,23 +30,21 @@ private:
 
     // WiFi manager & client
     WiFiManager &_wifiManager;
-    WiFiClient _wifiClient;
+    WiFiClientSecure _wifiClientSecure;
 
     // Endpoint handler (used when MQTT message is received)
     RestAPIEndpoints &_restAPIEndpoints;
 
     // MQTT client
-#ifdef MQTT_USE_ASYNC_MQTT
-    AsyncMqttClient _mqttClient;
-#else
     PubSubClient _mqttClient;
-#endif
 
     // MQTT details
     String _mqttServer;
     int _mqttPort;
     String _mqttInTopic;
     String _mqttOutTopic;
+    String _mqttUsername;
+    String _mqttPassword;
 
     // Connection details
     bool _wasConnected;
@@ -71,14 +64,9 @@ int _stressTestCounts[3];
 #endif
 
 public:
-#ifdef MQTT_USE_ASYNC_MQTT
-    MQTTManager(WiFiManager &wifiManager, RestAPIEndpoints &endpoints) : 
-            _wifiManager(wifiManager), _restAPIEndpoints(endpoints)
-#else
     MQTTManager(WiFiManager &wifiManager, RestAPIEndpoints &endpoints) : 
             _wifiManager(wifiManager), _restAPIEndpoints(endpoints), 
-            _mqttClient(_wifiClient)
-#endif
+            _mqttClient(_wifiClientSecure)
     {
         _mqttEnabled = false;
         _mqttPort = DEFAULT_MQTT_PORT;
@@ -108,7 +96,7 @@ public:
 
     void setup(ConfigBase& hwConfig, ConfigBase *pConfig);
     String formConfigStr();
-    void setMQTTServer(String &mqttServer, String &mqttInTopic, String &mqttOutTopic, int mqttPort = DEFAULT_MQTT_PORT);
+    void setMQTTServer(String &mqttServer, String &mqttInTopic, String &mqttOutTopic, String &mqttUsername, String &mqttPassword, int mqttPort);
     void reportJson(String& msg);
     void report(const char *reportStr);
     void reportSilent(const char *reportStr);
