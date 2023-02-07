@@ -70,14 +70,6 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
     {
         _ledPin = ledPin;
         _ledCount = ledCount;
-
-        _leds = new CRGB[_ledCount];
-        FastLED.addLeds<NEOPIXEL, LED_PIN>(_leds,_ledCount);
-        FastLED.setMaxPowerInVoltsAndMilliamps(5,1000);
-        FastLED.setBrightness(0);
-        FastLED.show();
-        FastLED.clear(true);
-        FastLED.show();
     }
 
     // Setup the sensor
@@ -124,6 +116,13 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
         Log.trace("%sLED Setup from JSON: %s On: %d, Brightness: %d, Auto Dim: %d, Effect: %d, Color R: %d, G: %d, B: %d\n", MODULE_PREFIX, 
                     ledStripConfigStr.c_str(), _ledOn, _ledBrightness, _autoDim, _effectID, _redVal, _greenVal, _blueVal);
     }
+
+    _leds = new CRGB[_ledCount];
+    FastLED.addLeds<NEOPIXEL, LED_PIN>(_leds,_ledCount);
+    FastLED.setMaxPowerInVoltsAndMilliamps(5,1000);
+    FastLED.setBrightness(_ledBrightness);
+    FastLED.clear(true);
+    FastLED.show();
 
     _isSetup = true;
     // Trigger initial write
@@ -236,10 +235,11 @@ void LedStrip::service()
     if (ledConfigChanged) {
         ledConfigChanged = false;
         updateNv();
+        FastLED.setBrightness(_ledBrightness);
+        FastLED.show();
         if(_effectID == 0) {
             FastLED.showColor(CRGB(_redVal, _greenVal, _blueVal));
         }
-        FastLED.setBrightness(_ledBrightness);
     }
 }
 
