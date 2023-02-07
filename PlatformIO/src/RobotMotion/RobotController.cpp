@@ -1,6 +1,9 @@
 // RBotFirmware
 // Rob Dobson 2016-18
 
+//Modifed to add rotary sandbot
+//Aiden Vigue 2023
+
 #include "RobotController.h"
 #include "ConfigBase.h"
 #include "RdJson.h"
@@ -11,6 +14,7 @@
 #include "Robots/RobotGeistBot.h"
 #include "Robots/RobotHockeyBot.h"
 #include "Robots/RobotSandTableScara.h"
+#include "Robots/RobotSandTableRotary.h"
 #include "Robots/RobotXYBot.h"
 
 RobotController::RobotController()
@@ -55,6 +59,14 @@ bool RobotController::init(const char* configStr)
     {
         Log.notice("Constructing %s\n", robotModel.c_str());
         _pRobot = new RobotSandTableScara(robotModel.c_str(), _motionHelper);
+        if (!_pRobot)
+            return false;
+        _pRobot->init(configStr);
+    }
+    else if (robotModel.equalsIgnoreCase("SandbotRotary"))
+    {
+        Log.notice("Constructing %s\n", robotModel.c_str());
+        _pRobot = new RobotSandTableRotary(robotModel.c_str(), _motionHelper);
         if (!_pRobot)
             return false;
         _pRobot->init(configStr);

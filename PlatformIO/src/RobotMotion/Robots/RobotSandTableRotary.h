@@ -1,5 +1,5 @@
 // RBotFirmware
-// Rob Dobson 2016
+// Aiden Vigue 2023
 
 #pragma once
 
@@ -15,7 +15,7 @@ class AxisInt32s;
     #define M_PI 3.14159265358979323846
 #endif
 
-class RobotSandTableScara : public RobotBase
+class RobotSandTableRotary : public RobotBase
 {
 public:
     static const int NUM_ROBOT_AXES = 2;
@@ -26,15 +26,15 @@ public:
     };
 
 public:
-    // Notes for SandTableScara
+    // Notes for SandTableRotary
     // Positive stepping direction for axis 0 is clockwise movement of the upper arm when viewed from top of robot
     // Positive stepping direction for axis 1 is anticlockwise movement of the lower arm when viewed from top of robot
     // Home position has elbow joint next to elbow position detector and magnet in centre
     // In the following the elbow joint at home position is at X=100, Y=0
     // Angles of upper arm are calculated clockwise from North
     // Angles of lower arm are calculated clockwise from North
-    RobotSandTableScara(const char* pRobotTypeName, MotionHelper& motionHelper);
-    ~RobotSandTableScara();
+    RobotSandTableRotary(const char* pRobotTypeName, MotionHelper& motionHelper);
+    ~RobotSandTableRotary();
 
 private:
 
