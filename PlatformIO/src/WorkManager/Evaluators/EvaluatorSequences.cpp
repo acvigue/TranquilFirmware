@@ -231,3 +231,11 @@ void EvaluatorSequences::setRepeatMode(bool repeat) {
 void EvaluatorSequences::setShuffle(bool shuffle) {
     _shuffleMode = shuffle;
 }
+
+bool EvaluatorSequences::getRepeat() {
+    return _repeatMode;
+}
+
+bool EvaluatorSequences::getShuffle() {
+    return _shuffleMode;
+}

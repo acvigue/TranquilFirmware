@@ -81,6 +81,10 @@ void WorkManager::queryStatus(String &respStr)
         innerJsonStr += _evaluatorSequences.fileName();
         innerJsonStr += "\",\"playlistIdx\": ";
         innerJsonStr += String(_evaluatorSequences.currentWorkItemIndex());
+        innerJsonStr += ",\"repeatMode\":";
+        innerJsonStr += (_evaluatorSequences.getRepeat() == true) ? "true" : "false";
+        innerJsonStr += ",\"shuffleMode\":";
+        innerJsonStr += (_evaluatorSequences.getShuffle() == true) ? "true" : "false";
     }
 
     if(_evaluatorFiles.isBusy()) {

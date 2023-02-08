@@ -27,6 +27,8 @@ public:
 
     // Is Busy
     bool isBusy();
+    bool getShuffle();
+    bool getRepeat();
 
     //File Name
     String fileName();
