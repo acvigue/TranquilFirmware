@@ -186,6 +186,15 @@ void WorkManager::processSingle(const char *pCmdStr, String &retStr)
         _evaluatorSequences.service();
         retStr = okRslt;
     }
+    else if (strcasecmp(pCmdStr, "seq_prev") == 0)
+    {
+        _robotController.stop();
+        _workItemQueue.clear();
+        _evaluatorFiles.stop();
+        _evaluatorSequences.loadPrevious();
+        _evaluatorSequences.service();
+        retStr = okRslt;
+    }
     else if (strcasecmp(pCmdStr, "seq_shuffle_on") == 0)
     {
         _evaluatorSequences.setShuffle(true);
