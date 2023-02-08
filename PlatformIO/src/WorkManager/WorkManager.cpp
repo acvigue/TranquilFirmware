@@ -179,41 +179,53 @@ void WorkManager::processSingle(const char *pCmdStr, String &retStr)
         retStr = okRslt;
     }
     else if (strcasecmp(pCmdStr, "seq_next") == 0)
-    {
-        _robotController.stop();
-        _workItemQueue.clear();
-        _evaluatorFiles.stop();
-        _evaluatorSequences.service();
-        retStr = okRslt;
+    {   
+        if(_evaluatorSequences.isBusy()) {
+            _robotController.stop();
+            _workItemQueue.clear();
+            _evaluatorFiles.stop();
+            _evaluatorSequences.service();
+            retStr = okRslt;
+        }
     }
     else if (strcasecmp(pCmdStr, "seq_prev") == 0)
     {
-        _robotController.stop();
-        _workItemQueue.clear();
-        _evaluatorFiles.stop();
-        _evaluatorSequences.loadPrevious();
-        _evaluatorSequences.service();
-        retStr = okRslt;
+        if(_evaluatorSequences.isBusy()) {
+            _robotController.stop();
+            _workItemQueue.clear();
+            _evaluatorFiles.stop();
+            _evaluatorSequences.loadPrevious();
+            _evaluatorSequences.service();
+            retStr = okRslt;
+        }
     }
     else if (strcasecmp(pCmdStr, "seq_shuffle_on") == 0)
     {
-        _evaluatorSequences.setShuffle(true);
-        retStr = okRslt;
+        if(_evaluatorSequences.isBusy()) {
+            _evaluatorSequences.setShuffle(true);
+            retStr = okRslt;
+        }
     }
     else if (strcasecmp(pCmdStr, "seq_shuffle_off") == 0)
     {
-        _evaluatorSequences.setShuffle(false);
-        retStr = okRslt;
+        if(_evaluatorSequences.isBusy()) {
+            _evaluatorSequences.setShuffle(false);
+            retStr = okRslt;
+        }
     }
     else if (strcasecmp(pCmdStr, "seq_repeat_on") == 0)
     {
-        _evaluatorSequences.setRepeatMode(true);
-        retStr = okRslt;
+        if(_evaluatorSequences.isBusy()) {
+            _evaluatorSequences.setRepeatMode(true);
+            retStr = okRslt;
+        }
     }
     else if (strcasecmp(pCmdStr, "seq_repeat_off") == 0)
     {
-        _evaluatorSequences.setRepeatMode(false);
-        retStr = okRslt;
+        if(_evaluatorSequences.isBusy()) {
+            _evaluatorSequences.setRepeatMode(false);
+            retStr = okRslt;
+        }
     }
     else
     {
