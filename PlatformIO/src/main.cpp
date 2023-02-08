@@ -86,7 +86,6 @@ RestAPIEndpoints restAPIEndpoints;
 
 // Web server
 #include "WebServer.h"
-#include "WebAutogenResources.h"
 WebServer webServer;
 
 // MQTT
@@ -258,9 +257,9 @@ void setup()
 
     // Web server
     webServer.setup(hwConfig);
-    webServer.addStaticResources(__webAutogenResources, __webAutogenResourcesCount);
+    //webServer.addStaticResources(__webAutogenResources, __webAutogenResourcesCount);
     webServer.addEndpoints(restAPIEndpoints);
-    webServer.serveStaticFiles("/files/spiffs", "/spiffs/");
+    webServer.serveStaticFiles("/", "/spiffs/", "public");
     webServer.serveStaticFiles("/files/sd", "/sd/");
     webServer.enableAsyncEvents("/events");
 

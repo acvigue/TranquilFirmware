@@ -294,6 +294,10 @@ bool FileManager::getFilesJSON(const String& fileSystemStr, const String& folder
             continue;
         if (fName.equalsIgnoreCase("thumbs.db"))
             continue;
+        if (fName.equalsIgnoreCase(".Trashes"))
+            continue;
+        if (fName.equalsIgnoreCase(".fseventsd"))
+            continue;
 
         // Get file info including size
         size_t fileSize = 0;

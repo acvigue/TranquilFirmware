@@ -26,9 +26,10 @@
 
 #include "ESPAsyncWebServer.h"
 #include "AsyncStaticFileHandler.h"
+#include "ArduinoLog.h"
 
 AsyncStaticFileHandler::AsyncStaticFileHandler(const char* uri, const char* path, const char* cache_control)
-  : _uri(uri), _path(path), _default_file("index.htm"), _cache_control(cache_control), _last_modified(""), _callback(nullptr)
+  : _uri(uri), _path(path), _default_file("index.html"), _cache_control(cache_control), _last_modified(""), _callback(nullptr)
 {
   // Ensure leading '/'
   if (_uri.length() == 0 || _uri[0] != '/') _uri = "/" + _uri;
@@ -162,6 +163,7 @@ bool AsyncStaticFileHandler::_fileExists(AsyncWebServerRequest *request, const S
   bool gzipFound = false;
 
   String gzip = path + ".gz";
+  Log.notice("String gzip = %s\n", gzip.c_str());
 
   if (_gzipFirst) {
     gzipFound = existsAndIsAFile(gzip);
@@ -178,6 +180,8 @@ bool AsyncStaticFileHandler::_fileExists(AsyncWebServerRequest *request, const S
   _foundFileName = gzipFound ? gzip : path;
 
   bool found = fileFound || gzipFound;
+
+  Log.notice("Found = %b\n", found);
 
   if (found) {
     // Extract the file name from the path and keep it in _tempObject
@@ -210,11 +214,23 @@ void AsyncStaticFileHandler::handleRequest(AsyncWebServerRequest *request)
   String filename = String((char*)request->_tempObject);
   free(request->_tempObject);
   request->_tempObject = NULL;
+
+  Log.notice("handleRequest Filename: %s ", filename.c_str());
  
   if((_username != "" && _password != "") && !request->authenticate(_username.c_str(), _password.c_str()))
       return request->requestAuthentication();
 
   size_t fileSize = fileSizeInBytes(filename);
+
+  if(fileSize == 0) {
+    String filename_gz = filename + ".gz";
+    size_t fileSize_gz = fileSizeInBytes(filename_gz);
+    if(fileSize_gz > 0) {
+      filename = filename_gz;
+      fileSize = fileSize_gz;
+    }
+  }
+
   if (fileSize > 0) {
     String etag = String(fileSize);
     if (_last_modified.length() && _last_modified == request->header("If-Modified-Since")) {
@@ -272,46 +288,12 @@ void AsyncStaticFileResponse::_setContentType(const String& path){
   else _contentType = "text/plain";
 }
 
-// AsyncStaticFileResponse::AsyncStaticFileResponse(FS &fs, const String& path, const String& contentType, bool download, AwsTemplateProcessor callback): AsyncAbstractResponse(callback){
-//   _code = 200;
-//   _path = path;
-
-//   if(!download && !fs.exists(_path) && fs.exists(_path+".gz")){
-//     _path = _path+".gz";
-//     addHeader("Content-Encoding", "gzip");
-//     _callback = nullptr; // Unable to process zipped templates
-//     _sendContentLength = true;
-//     _chunked = false;
-//   }
-
-//   _content = fs.open(_path, "r");
-//   _contentLength = _content.size();
-
-//   if(contentType == "")
-//     _setContentType(path);
-//   else
-//     _contentType = contentType;
-
-//   int filenameStart = path.lastIndexOf('/') + 1;
-//   char buf[26+path.length()-filenameStart];
-//   char* filename = (char*)path.c_str() + filenameStart;
-
-//   if(download) {
-//     // set filename and force download
-//     snprintf(buf, sizeof (buf), "attachment; filename=\"%s\"", filename);
-//   } else {
-//     // set filename and force rendering
-//     snprintf(buf, sizeof (buf), "inline; filename=\"%s\"", filename);
-//   }
-//   addHeader("Content-Disposition", buf);
-// }
-
 AsyncStaticFileResponse::AsyncStaticFileResponse(const String& foundFileName, const String& path, const String& contentType, bool download, AwsTemplateProcessor callback): AsyncAbstractResponse(callback){
   _code = 200;
   _path = path;
   _pFile = NULL;
 
-  if(!download && foundFileName.endsWith(".gz") && !path.endsWith(".gz")){
+  if(!download && foundFileName.endsWith(".gz")){
     addHeader("Content-Encoding", "gzip");
     _callback = nullptr; // Unable to process gzipped templates
     _sendContentLength = true;
@@ -321,21 +303,28 @@ AsyncStaticFileResponse::AsyncStaticFileResponse(const String& foundFileName, co
   _contentLength = AsyncStaticFileHandler::fileSizeInBytes(_path);
   _pFile = fopen(_path.c_str(), "rb");
 
-  if(contentType == "")
-    _setContentType(path);
-  else
-    _contentType = contentType;
+  if(foundFileName.endsWith(".gz")) {
+    String path_x = path;
+    path_x.replace(".gz","");
+    _setContentType(path_x);
+  } else {
+    if(contentType == "")
+      _setContentType(path);
+    else
+      _contentType = contentType;
+  }
 
   int filenameStart = path.lastIndexOf('/') + 1;
   char buf[26+path.length()-filenameStart];
   char* filename = (char*)path.c_str() + filenameStart;
-
-  if(download) {
-    snprintf(buf, sizeof (buf), "attachment; filename=\"%s\"", filename);
-  } else {
-    snprintf(buf, sizeof (buf), "inline; filename=\"%s\"", filename);
+  if(!foundFileName.endsWith(".gz")) {
+    if(download) {
+      snprintf(buf, sizeof (buf), "attachment; filename=\"%s\"", filename);
+    } else {
+      snprintf(buf, sizeof (buf), "inline; filename=\"%s\"", filename);
+    }
+    addHeader("Content-Disposition", buf);
   }
-  addHeader("Content-Disposition", buf);
 }
 
 size_t AsyncStaticFileResponse::_fillBuffer(uint8_t *data, size_t len){
