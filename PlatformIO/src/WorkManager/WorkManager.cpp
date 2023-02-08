@@ -178,6 +178,23 @@ void WorkManager::processSingle(const char *pCmdStr, String &retStr)
         evaluatorsStop();
         retStr = okRslt;
     }
+    else if (strcasecmp(pCmdStr, "seq_next") == 0)
+    {
+        _robotController.stop();
+        _workItemQueue.clear();
+        _evaluatorFiles.stop();
+        _evaluatorSequences.service();
+        retStr = okRslt;
+    }
+    else if (strcasecmp(pCmdStr, "seq_prev") == 0)
+    {
+        _robotController.stop();
+        _workItemQueue.clear();
+        _evaluatorFiles.stop();
+        _evaluatorSequences.loadPrevious();
+        _evaluatorSequences.service();
+        retStr = okRslt;
+    }
     else
     {
         // Send the line to the workflow manager

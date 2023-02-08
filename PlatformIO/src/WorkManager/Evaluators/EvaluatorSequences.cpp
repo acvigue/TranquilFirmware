@@ -215,3 +215,8 @@ void EvaluatorSequences::stop()
 {
     _inProgress = false;
 }
+
+void EvaluatorSequences::loadPrevious() {
+    _linesDone--;
+    _reqLineIdx--;
+}

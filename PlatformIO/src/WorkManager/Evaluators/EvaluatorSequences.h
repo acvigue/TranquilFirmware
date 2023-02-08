@@ -45,6 +45,7 @@ public:
 
     // Control
     void stop();
+    void loadPrevious();
     
 private:
     // Count lines
