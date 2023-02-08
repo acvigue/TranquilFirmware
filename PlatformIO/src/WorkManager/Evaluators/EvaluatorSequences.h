@@ -46,6 +46,8 @@ public:
     // Control
     void stop();
     void loadPrevious();
+    void setRepeatMode(bool repeat);
+    void setShuffle(bool shuffle);
     
 private:
     // Count lines

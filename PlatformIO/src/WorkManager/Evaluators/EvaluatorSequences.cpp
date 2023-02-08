@@ -141,6 +141,14 @@ void EvaluatorSequences::service()
     // Check if operative
     if (!_inProgress)
         return;
+
+    if ((_linesDone == _lineCount) && !_repeatMode)
+    {
+        _inProgress = false;
+        Log.trace("%sservice linesDone %d lineCount %d no repeat so stopping\n", MODULE_PREFIX, 
+            _linesDone, _lineCount);
+        return;
+    }
         
     // Get required line
     const char* pCommandList = _commandList.c_str();
@@ -182,12 +190,7 @@ void EvaluatorSequences::service()
         }
         // Bump
         _linesDone++;
-        if ((_linesDone == _lineCount) && !_repeatMode)
-        {
-            _inProgress = false;
-            Log.trace("%sservice linesDone %d lineCount %d no repeat so stopping\n", MODULE_PREFIX, 
-                _linesDone, _lineCount);
-        }
+
         // Next req item
         _reqLineIdx++;
         if (_reqLineIdx >= _lineCount)
@@ -219,4 +222,12 @@ void EvaluatorSequences::stop()
 void EvaluatorSequences::loadPrevious() {
     _linesDone--;
     _reqLineIdx--;
+}
+
+void EvaluatorSequences::setRepeatMode(bool repeat) {
+    _repeatMode = repeat;
+}
+
+void EvaluatorSequences::setShuffle(bool shuffle) {
+    _shuffleMode = shuffle;
 }
