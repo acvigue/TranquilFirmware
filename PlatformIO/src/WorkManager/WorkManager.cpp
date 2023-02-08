@@ -79,13 +79,17 @@ void WorkManager::queryStatus(String &respStr)
     if(_evaluatorSequences.isBusy()) {
         innerJsonStr += ",\"playlist\": true, \"playlistName\": \"";
         innerJsonStr += _evaluatorSequences.fileName();
-        innerJsonStr += "\"";
+        innerJsonStr += "\",\"playlistIdx\": ";
+        innerJsonStr += String(_evaluatorSequences.currentWorkItemIndex());
     }
 
     if(_evaluatorFiles.isBusy()) {
         innerJsonStr += ",\"file\": \"";
         innerJsonStr += _evaluatorFiles.fileName();
-        innerJsonStr += "\"";
+        innerJsonStr += "\",\"filePos\": ";
+        innerJsonStr += String(_evaluatorFiles.getTotalFileLength());
+        innerJsonStr += ",\"fileLen\": ";
+        innerJsonStr += String(_evaluatorFiles.getCurrentFilePosition());
     }
 
     // System information

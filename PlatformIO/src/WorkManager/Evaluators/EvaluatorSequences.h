@@ -30,6 +30,9 @@ public:
 
     //File Name
     String fileName();
+
+    //Current work item index
+    int currentWorkItemIndex();
     
     // Check valid
     bool isValid(WorkItem& workItem);

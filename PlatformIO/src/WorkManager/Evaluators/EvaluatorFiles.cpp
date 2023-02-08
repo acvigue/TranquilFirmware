@@ -90,6 +90,16 @@ bool EvaluatorFiles::execWorkItem(WorkItem& workItem)
     return retc;
 }
 
+int EvaluatorFiles::getCurrentFilePosition()
+{
+    return _filePos;
+}
+
+int EvaluatorFiles::getTotalFileLength()
+{
+    return _fileLen;
+}
+
 void EvaluatorFiles::service()
 {
     // Check in progress
@@ -115,6 +125,9 @@ void EvaluatorFiles::service()
     int chunkLen = 0;
     bool finalChunk = false;
     uint8_t* pLine = _fileManager.chunkFileNext(filename, fileLen, chunkPos, chunkLen, finalChunk);
+
+    _fileLen = fileLen;
+    _filePos = chunkPos;
 
     // Check if valid
     if (chunkLen > 0)

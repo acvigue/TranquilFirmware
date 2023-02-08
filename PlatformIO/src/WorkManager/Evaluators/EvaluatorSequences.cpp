@@ -50,6 +50,12 @@ String EvaluatorSequences::fileName()
     return _fileName;
 }
 
+//Return currently playing sequence work item index
+int EvaluatorSequences::currentWorkItemIndex()
+{
+    return _reqLineIdx;
+}
+
 // Check if valid
 bool EvaluatorSequences::isValid(WorkItem& workItem)
 {

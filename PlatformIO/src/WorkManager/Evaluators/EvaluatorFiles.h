@@ -22,6 +22,12 @@ public:
 
     //File name
     String fileName();
+
+    //Total file length
+    int getTotalFileLength();
+
+    //Current file position
+    int getCurrentFilePosition();
     
     // Check valid
     bool isValid(WorkItem& workItem);
@@ -52,6 +58,9 @@ private:
 
     // File type
     int _fileType;
+
+    int _fileLen;
+    int _filePos;
 
     String _fileName;
 
