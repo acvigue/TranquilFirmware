@@ -163,7 +163,6 @@ bool AsyncStaticFileHandler::_fileExists(AsyncWebServerRequest *request, const S
   bool gzipFound = false;
 
   String gzip = path + ".gz";
-  Log.notice("String gzip = %s\n", gzip.c_str());
 
   if (_gzipFirst) {
     gzipFound = existsAndIsAFile(gzip);
@@ -180,8 +179,6 @@ bool AsyncStaticFileHandler::_fileExists(AsyncWebServerRequest *request, const S
   _foundFileName = gzipFound ? gzip : path;
 
   bool found = fileFound || gzipFound;
-
-  Log.notice("Found = %b\n", found);
 
   if (found) {
     // Extract the file name from the path and keep it in _tempObject
@@ -214,8 +211,6 @@ void AsyncStaticFileHandler::handleRequest(AsyncWebServerRequest *request)
   String filename = String((char*)request->_tempObject);
   free(request->_tempObject);
   request->_tempObject = NULL;
-
-  Log.notice("handleRequest Filename: %s ", filename.c_str());
  
   if((_username != "" && _password != "") && !request->authenticate(_username.c_str(), _password.c_str()))
       return request->requestAuthentication();
