@@ -91,9 +91,9 @@ void WorkManager::queryStatus(String &respStr)
         innerJsonStr += ",\"file\": \"";
         innerJsonStr += _evaluatorFiles.fileName();
         innerJsonStr += "\",\"filePos\": ";
-        innerJsonStr += String(_evaluatorFiles.getTotalFileLength());
-        innerJsonStr += ",\"fileLen\": ";
         innerJsonStr += String(_evaluatorFiles.getCurrentFilePosition());
+        innerJsonStr += ",\"fileLen\": ";
+        innerJsonStr += String(_evaluatorFiles.getTotalFileLength());
     }
 
     // System information
@@ -186,9 +186,9 @@ void WorkManager::processSingle(const char *pCmdStr, String &retStr)
     {   
         if(_evaluatorSequences.isBusy()) {
             _robotController.stop();
-            _workItemQueue.clear();
+            _evaluatorThetaRhoLine.stop();
             _evaluatorFiles.stop();
-            _evaluatorSequences.service();
+            _workItemQueue.clear();
             retStr = okRslt;
         }
     }
@@ -196,10 +196,10 @@ void WorkManager::processSingle(const char *pCmdStr, String &retStr)
     {
         if(_evaluatorSequences.isBusy()) {
             _robotController.stop();
-            _workItemQueue.clear();
+            _evaluatorThetaRhoLine.stop();
             _evaluatorFiles.stop();
+            _workItemQueue.clear();
             _evaluatorSequences.loadPrevious();
-            _evaluatorSequences.service();
             retStr = okRslt;
         }
     }

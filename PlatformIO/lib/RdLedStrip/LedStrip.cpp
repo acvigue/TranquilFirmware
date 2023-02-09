@@ -96,6 +96,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
         // Default to LED On, Half Brightness
         _ledOn = true;
         _ledBrightness = 0x7f;
+        _ledRealBrightness = 0;
         _effectSpeed = 50;
         _autoDim = false;
         _redVal = 0xcc;
@@ -106,6 +107,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
     } else {
         _ledOn = _ledNvValues.getLong("ledOn", 0) == 1;
         _ledBrightness = _ledNvValues.getLong("ledBrightness", 50);
+        _ledRealBrightness = 0;
         _autoDim = _ledNvValues.getLong("autoDim", 0) == 1;
         _effectSpeed = _ledNvValues.getLong("effectSpeed", 0);
         _effectID = _ledNvValues.getLong("effectID", 0);
@@ -194,11 +196,7 @@ void LedStrip::service()
         return;
 
     // If the switch is off or sleeping, turn off the led
-    if (!_ledOn || _isSleeping)
-    {
-        _ledBrightness = 0x0;
-    }
-    else
+    if (_ledOn || !_isSleeping)
     {
         // TODO Auto Dim isn't working as expected - this should never go enabled right now
         // Check if we need to read and evaluate the light sensor
@@ -235,11 +233,6 @@ void LedStrip::service()
     if (ledConfigChanged) {
         ledConfigChanged = false;
         updateNv();
-        FastLED.setBrightness(_ledBrightness);
-        FastLED.show();
-        if(_effectID == 0) {
-            FastLED.showColor(CRGB(_redVal, _greenVal, _blueVal));
-        }
     }
 }
 
@@ -249,14 +242,37 @@ void LedStrip::serviceStrip() {
     if (!_isSetup)
         return;
 
+    if (_ledOn) {
+        if (_ledRealBrightness != _ledBrightness) {
+            int _ledRealBrightnessInt = _ledRealBrightness;
+            int _ledBrightnessInt = _ledBrightness;
+
+            if(_ledRealBrightnessInt < _ledBrightnessInt) {
+                _ledRealBrightnessInt++;
+            } else {
+                _ledRealBrightnessInt--;
+            }
+
+            _ledRealBrightness = _ledRealBrightnessInt;
+
+            FastLED.setBrightness(_ledRealBrightness);
+        }
+    } else {
+        if(_ledRealBrightness > 0) {
+            int _ledRealBrightnessInt = _ledRealBrightness;
+            _ledRealBrightnessInt--;
+            _ledRealBrightness = _ledRealBrightnessInt;
+            FastLED.setBrightness(_ledRealBrightness);
+        }
+    }
+
     switch(_effectID) {
+        case 0: solid_color(); break;
         case 1: effect_pride(); break;
         default: break;
     }
 
-    if(_effectID != 0) {
-        FastLED.show();
-    }
+    FastLED.show();
 }
 
 void LedStrip::configChanged()
@@ -315,6 +331,14 @@ void LedStrip::setSleepMode(int sleep)
 }
 
 //MARK: EFFECTS
+
+void LedStrip::solid_color() 
+{
+  for( uint16_t i = 0 ; i < _ledCount; i++) {
+    CRGB newcolor = CRGB(_redVal, _greenVal, _blueVal);
+    _leds[i] = newcolor;
+  }
+}
 
 void LedStrip::effect_pride() 
 {

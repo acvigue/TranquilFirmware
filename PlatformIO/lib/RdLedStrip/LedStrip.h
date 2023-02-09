@@ -28,6 +28,7 @@ private:
     void updateNv();
     uint16_t getAverageSensorReading();
     void effect_pride();
+    void solid_color();
 
 private:
     String _name;
@@ -41,6 +42,7 @@ private:
 
     bool _ledOn;
     byte _ledBrightness = -1;
+    byte _ledRealBrightness = -1;
     int _effectSpeed = 0;
     bool _autoDim = false;
 

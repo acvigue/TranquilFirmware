@@ -220,8 +220,8 @@ void EvaluatorSequences::stop()
 }
 
 void EvaluatorSequences::loadPrevious() {
-    _linesDone--;
-    _reqLineIdx--;
+    _linesDone = min(0, _linesDone - 1);
+    _reqLineIdx = min(0, _reqLineIdx - 2);
 }
 
 void EvaluatorSequences::setRepeatMode(bool repeat) {

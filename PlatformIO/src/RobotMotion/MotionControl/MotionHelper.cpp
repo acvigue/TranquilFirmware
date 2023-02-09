@@ -157,7 +157,7 @@ void MotionHelper::stop()
     _rampGenerator.stop();
     _trinamicsController.stop();
     _motionPipeline.clear();
-    pause(false);
+    //pause(false);
     setCurPosActualPosition();
  }
 
