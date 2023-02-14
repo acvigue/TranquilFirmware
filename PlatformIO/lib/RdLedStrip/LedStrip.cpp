@@ -51,12 +51,11 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
     int ledCount = ledConfig.getLong("ledCount", 0);
 
     // Ambient Light Sensor Pin
-    String sensorStr = ledConfig.getString("sensorPin", "");
-    int sensorPin = -1;
-    if (sensorStr.length() != 0)
-        sensorPin = ConfigPinMap::getPinFromName(sensorStr.c_str());
+    int sensorEnabled = ledConfig.getLong("tslEnabled", 0);
+    int sensorSDA = ledConfig.getLong("tslSDA", 0);
+    int sensorSCL = ledConfig.getLong("tslSCL", 0);
 
-    Log.notice("%sLED pin %d Sensor pin %d count %d\n", MODULE_PREFIX, ledPin, sensorPin, ledCount);
+    Log.notice("%sLED pin %d TSL enabled: %d TSL SDA: %d TSL SCL: %d count %d\n", MODULE_PREFIX, ledPin, sensorEnabled, sensorSDA, sensorSCL, ledCount);
     // Sensor pin isn't necessary for operation.
     if (ledPin == -1)
         return;
@@ -73,16 +72,16 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
     }
 
     // Setup the sensor
-    _sensorPin = sensorPin;
-    if (_sensorPin != -1) {
+    _sensorEnabled = sensorEnabled;
+    if (_sensorEnabled == 1) {
         _tsl = new Adafruit_TSL2561_Unified(TSL2561_ADDR_FLOAT, 12345);
 
-        Wire.begin();
+        Wire.begin(sensorSDA, sensorSCL);
         if(!_tsl->begin())
         {
             /* There was a problem detecting the TSL2561 ... check your connections */
             Log.info("%sOoops, no TSL2561 detected ... Check your wiring or I2C ADDR!\n", MODULE_PREFIX);
-            _sensorPin = -1;
+            _sensorEnabled = 0;
         } else {
             _tsl->enableAutoRange(true);            /* Auto-gain ... switches automatically between 1x and 16x */
             _tsl->setIntegrationTime(TSL2561_INTEGRATIONTIME_13MS);      /* fast but low resolution */   
@@ -123,8 +122,10 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
     FastLED.addLeds<NEOPIXEL, LED_PIN>(_leds,_ledCount);
     FastLED.setMaxPowerInVoltsAndMilliamps(5,1000);
     FastLED.setBrightness(_ledBrightness);
+    FastLED.show();
     FastLED.clear(true);
     FastLED.show();
+    delay(100);
 
     _isSetup = true;
     // Trigger initial write
@@ -201,23 +202,23 @@ void LedStrip::service()
         // TODO Auto Dim isn't working as expected - this should never go enabled right now
         // Check if we need to read and evaluate the light sensor
         if (_autoDim) {
-            if (_sensorPin != -1 && (millis() - _last_check_tsl_time > 500)) {
+            if (_sensorEnabled == 1 && (millis() - _last_check_tsl_time > 3000)) {
 
                 sensors_event_t event;
                 _tsl->getEvent(&event);
 
                 byte ledBrightness;
-                if(event.light > 100) {
+                if(event.light > 25) {
                     //high brightness
-                    ledBrightness = 200;
-                } else if(event.light > 50) {
+                    ledBrightness = 100;
+                } else if(event.light > 10) {
                     //low brightness
-                    ledBrightness = 120;
-                } else if(event.light > 5) {
+                    ledBrightness = 50;
+                } else if(event.light > 1) {
                     //low brightness
-                    ledBrightness = 30;
-                } else {
                     ledBrightness = 5;
+                } else {
+                    ledBrightness = 0;
                 }
 
                 if (_ledBrightness != ledBrightness) {

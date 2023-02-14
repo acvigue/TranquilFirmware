@@ -38,7 +38,7 @@ private:
     bool _isSleeping;
     int _ledPin;
     int _ledCount;
-    int _sensorPin;
+    int _sensorEnabled;
 
     bool _ledOn;
     byte _ledBrightness = -1;
