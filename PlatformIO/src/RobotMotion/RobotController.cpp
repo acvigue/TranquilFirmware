@@ -63,7 +63,7 @@ bool RobotController::init(const char* configStr)
             return false;
         _pRobot->init(configStr);
     }
-    else if (robotModel.equalsIgnoreCase("SandbotRotary"))
+    else if (robotModel.equalsIgnoreCase("SandBotRotary"))
     {
         Log.notice("Constructing %s\n", robotModel.c_str());
         _pRobot = new RobotSandTableRotary(robotModel.c_str(), _motionHelper);
