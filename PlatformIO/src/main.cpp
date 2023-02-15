@@ -303,7 +303,7 @@ void setup()
     xTaskCreatePinnedToCore(
       ledTaskFunc, /* Function to implement the task */
       "Task1", /* Name of the task */
-      10000,  /* Stack size in words */
+      1500,  /* Stack size in words */
       NULL,  /* Task input parameter */
       1,  /* Priority of the task */
       &ledTask,  /* Task handle. */
@@ -311,7 +311,6 @@ void setup()
 
     ArduinoOTA.setHostname("sandy");
     ArduinoOTA.setMdnsEnabled(true);
-    //ArduinoOTA.setPassword("PLM");
 
     ArduinoOTA.begin();
 }

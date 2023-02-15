@@ -250,9 +250,10 @@ void RobotSandTableRotary::relativePolarToSteps(AxisFloats& relativePolar, AxisP
     float rhoCounteractSteps = relativePolar.getVal(0) * axesParams.getStepsPerRot(1);
 
     //Then, rho really NEEDS to move relPolar[1] * maxLinear in mm.
-    //which, mm -> steps is (mm * mm/rot) * stepsPerRot
+    //which, mm -> steps is (mm / mm/rot) * stepsPerRot
+    
     float rhoMM = relativePolar.getVal(1) * maxLinear;
-    float rhoActiveSteps = (rhoMM * axesParams.getunitsPerRot(1)) * axesParams.getStepsPerRot(1);
+    float rhoActiveSteps = (rhoMM / axesParams.getunitsPerRot(1)) * axesParams.getStepsPerRot(1);
     
     int32_t stepsRelRho = int32_t(roundf(rhoCounteractSteps + rhoActiveSteps));
 
