@@ -137,14 +137,20 @@ void RobotSandTableRotary::correctStepOverflow(AxisPosition& curPos, AxesParams&
         curPos._stepsFromHome.setVal(1, 0);
     }
 
-    float maxLinear = -1;
-    axesParams.getMaxVal(1, maxLinear);
-    if(maxLinear == -1)
-        maxLinear = 100;
+    AxisFloats targetPolar;
+    bool isValid = cartesianToPolar(curPos._axisPositionMM, targetPolar, axesParams);
+    if(isValid) {
+        float maxLinear = -1;
+        axesParams.getMaxVal(1, maxLinear);
+        if(maxLinear == -1)
+            maxLinear = 100;
 
-    int32_t maxStepsAxis1 = stepsPerRot1 * (maxLinear / axesParams.getunitsPerRot(1));
-    if(curPos._stepsFromHome.getVal(1) > maxStepsAxis1) {
-        curPos._stepsFromHome.setVal(1, maxStepsAxis1);
+        float currentRho = targetPolar.getVal(1);
+        
+        //steps from home for rho axis will be the current rho (0 -> 1) * maxStepsRho;
+        int32_t maxStepsRho = stepsPerRot1 * (maxLinear / axesParams.getunitsPerRot(1));
+        int32_t currentRhoSteps = round(currentRho * maxStepsRho);
+        curPos._stepsFromHome.setVal(1, currentRhoSteps);
     }
 }
 
