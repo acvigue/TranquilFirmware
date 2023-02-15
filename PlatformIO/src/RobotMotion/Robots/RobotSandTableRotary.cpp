@@ -149,7 +149,7 @@ void RobotSandTableRotary::correctStepOverflow(AxisPosition& curPos, AxesParams&
         
         //steps from home for rho axis will be the current rho (0 -> 1) * maxStepsRho;
         int32_t maxStepsRho = stepsPerRot1 * (maxLinear / axesParams.getunitsPerRot(1));
-        int32_t currentRhoSteps = round(currentRho * maxStepsRho);
+        int32_t currentRhoSteps = int32_t(roundf(currentRho * maxStepsRho));
         curPos._stepsFromHome.setVal(1, currentRhoSteps);
     }
 }
