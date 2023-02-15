@@ -56,8 +56,7 @@ private:
     static void setRobotAttributes(AxesParams& axesParams, String& robotAttributes);
 
 private:
-    static bool cartesianToPolar(AxisFloats& targetPt, AxisFloats& targetSoln1, 
-                    AxisFloats& targetSoln2, AxesParams& axesParams);
+    static bool cartesianToPolar(AxisFloats& targetPt, AxisFloats& targetSoln1, AxesParams& axesParams);
     static void stepsToPolar(AxisInt32s& actuatorCoords, AxisFloats& rotationDegrees, AxesParams& axesParams);
     static float calcRelativePolar(float targetRotation, float curRotation);
     static void relativePolarToSteps(AxisFloats& relativePolar, AxisPosition& curAxisPositions, 

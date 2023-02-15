@@ -13,12 +13,11 @@
 static const char* MODULE_PREFIX = "SandTableRotary: ";
 
 // Notes for SandTableRotary
-// Positive stepping direction for axis 0 is clockwise movement of the upper arm when viewed from top of robot
-// Positive stepping direction for axis 1 is anticlockwise movement of the lower arm when viewed from top of robot
-// Home position has elbow joint next to elbow position detector and magnet in centre
-// In the following the elbow joint at home position is at X=100, Y=0
-// Angles of upper arm are calculated clockwise from North
-// Angles of lower arm are calculated clockwise from North
+// Positive stepping direction for axis 0 is clockwise movement of the rotary plate
+// Positive stepping direction for axis 1 need to move OUT
+
+//Axis 0 = ROTARY axis
+//Axis 1 = LINEAR axis!
 
 RobotSandTableRotary::RobotSandTableRotary(const char* pRobotTypeName, MotionHelper& motionHelper) :
     RobotBase(pRobotTypeName, motionHelper)
@@ -32,11 +31,15 @@ RobotSandTableRotary::~RobotSandTableRotary()
 }
 
 // Convert a cartesian point to actuator coordinates
+//MARK: REVIEWED
 bool RobotSandTableRotary::ptToActuator(AxisFloats& targetPt, AxisFloats& outActuator, 
             AxisPosition& curAxisPositions, AxesParams& axesParams, bool allowOutOfBounds)
 {
     // Convert the current position to polar wrapped 0..360 degrees
+    // Val0 is theta
+    // Val0 is rho
     AxisFloats curPolar;
+
     stepsToPolar(curAxisPositions._stepsFromHome, curPolar, axesParams);
 
     // Best relative polar solution
@@ -45,61 +48,44 @@ bool RobotSandTableRotary::ptToActuator(AxisFloats& targetPt, AxisFloats& outAct
 	// Check for points close to the origin
 	if (AxisUtils::isApprox(targetPt._pt[0], 0, 1) && (AxisUtils::isApprox(targetPt._pt[1], 0, 1)))
 	{
-		// Special case
-#ifdef DEBUG_SANDTABLERotary_MOTION
-		Log.trace("%sptToActuator x %F y %F close to origin\n", MODULE_PREFIX, targetPt._pt[0], targetPt._pt[1]);
-#endif
-
-		// Keep the current position for alpha, set beta to alpha+180 (i.e. doubled-back so end-effector is in centre)
+		// Keep the current position for theta, set rho to 0 (current position, negative)
         relativePolarSolution.setVal(0, 0);
-        relativePolarSolution.setVal(1, calcRelativePolar(curPolar.getVal(0) + 180, curPolar.getVal(1)));
+        relativePolarSolution.setVal(1, curPolar.getVal(1) * -1);
 	}
-    else
-    {
+    else {
         // Convert the target cartesian coords to polar wrapped to 0..360 degrees
-        AxisFloats soln1, soln2;
-        bool isValid = cartesianToPolar(targetPt, soln1, soln2, axesParams);
+        AxisFloats targetPolar;
+        bool isValid = cartesianToPolar(targetPt, targetPolar, axesParams);
         if ((!isValid) && (!allowOutOfBounds))
         {
             Log.verbose("%sOut of bounds not allowed\n", MODULE_PREFIX);
             return false;
         }
 
-        // Find the minimum rotation for each motor
-        float a1Rel = calcRelativePolar(soln1.getVal(0), curPolar.getVal(0));
-        float b1Rel = calcRelativePolar(soln1.getVal(1), curPolar.getVal(1));
-        float a2Rel = calcRelativePolar(soln2.getVal(0), curPolar.getVal(0));
-        float b2Rel = calcRelativePolar(soln2.getVal(1), curPolar.getVal(1));
+        // Find the minimum rotation for theta
+        float theta1Rel = calcRelativePolar(targetPolar.getVal(0), curPolar.getVal(0));
+        float rhoRel = targetPolar.getVal(1) - targetPolar.getVal(0);
 
-        // Which solution involves least overall rotation
-        if (abs(a1Rel) + abs(b1Rel) <= abs(a2Rel) + abs(b2Rel))
-        {
-            relativePolarSolution.setVal(0, a1Rel);
-            relativePolarSolution.setVal(1, b1Rel);
-        }
-        else
-        {
-            relativePolarSolution.setVal(0, a2Rel);
-            relativePolarSolution.setVal(1, b2Rel);
-        }
+        relativePolarSolution.setVal(0, theta1Rel);
+        relativePolarSolution.setVal(1, rhoRel);
     }
 
     // Apply this to calculate required steps
     relativePolarToSteps(relativePolarSolution, curAxisPositions, outActuator, axesParams);
 
     // Debug
-#ifdef DEBUG_SANDTABLERotary_MOTION
-    Log.trace("%sptToAct newX %F newY %F prevX %F prevY %F dist %F abs steps %F, %F minRot1 %F, minRot2 %F\n", MODULE_PREFIX, 
-                targetPt._pt[0], 
-                targetPt._pt[1], 
-                curAxisPositions._axisPositionMM.getVal(0), 
-                curAxisPositions._axisPositionMM.getVal(1), 
-                sqrt(targetPt._pt[0]*targetPt._pt[0]+targetPt._pt[1]*targetPt._pt[1]),
-                outActuator.getVal(0), 
-                outActuator.getVal(1), 
-                relativePolarSolution.getVal(0), 
-                relativePolarSolution.getVal(1));
-#endif
+    #ifdef DEBUG_SANDTABLERotary_MOTION
+        Log.trace("%sptToAct newX %F newY %F prevX %F prevY %F dist %F abs steps %F, %F minRot1 %F, minRot2 %F\n", MODULE_PREFIX, 
+                    targetPt._pt[0], 
+                    targetPt._pt[1], 
+                    curAxisPositions._axisPositionMM.getVal(0), 
+                    curAxisPositions._axisPositionMM.getVal(1), 
+                    sqrt(targetPt._pt[0]*targetPt._pt[0]+targetPt._pt[1]*targetPt._pt[1]),
+                    outActuator.getVal(0), 
+                    outActuator.getVal(1), 
+                    relativePolarSolution.getVal(0), 
+                    relativePolarSolution.getVal(1));
+    #endif
 
     return true;
 }
@@ -110,25 +96,21 @@ void RobotSandTableRotary::actuatorToPt(AxisInt32s& actuatorPos, AxisFloats& out
     AxisFloats curPolar;
     stepsToPolar(actuatorPos, curPolar, axesParams);
 
-	// Calculate arm lengths
-	// The maxVal for axis0 and axis1 are used to determine the arm lengths
-	// The radius of the machine is the sum of these two lengths
-	float shoulderElbowMM = 0, elbowHandMM = 0;
-	bool axis0MaxValid = axesParams.getMaxVal(0, shoulderElbowMM);
-	bool axis1MaxValid = axesParams.getMaxVal(1, elbowHandMM);
-    // If not valid set to some values to avoid arithmetic errors
-	if (!axis0MaxValid)
-		shoulderElbowMM = 100;
-	if (!axis1MaxValid)
-		elbowHandMM = 100;
+	// Calculate max linear axis
+	float maxLinear = -1;
+    axesParams.getMaxVal(1, maxLinear);
+    if(maxLinear == -1)
+        maxLinear = 100;
 
     // Compute axis positions from polar values
-    float elbowX = shoulderElbowMM * sin(AxisUtils::d2r(curPolar.getVal(0)));
-    float elbowY = shoulderElbowMM * cos(AxisUtils::d2r(curPolar.getVal(0)));
-    float handXDiff = elbowHandMM * sin(AxisUtils::d2r(curPolar.getVal(1)));
-    float handYDiff = elbowHandMM * cos(AxisUtils::d2r(curPolar.getVal(1)));
-    outPt.setVal(0, elbowX + handXDiff);
-    outPt.setVal(1, elbowY + handYDiff);    
+    float rho = curPolar.getVal(1);
+    float theta = curPolar.getVal(0);
+
+    float x = rho * cos(theta);
+    float y = rho * sin(theta);
+
+    outPt.setVal(0, x);
+    outPt.setVal(1, y);    
 
     // Debug
 #ifdef DEBUG_SANDTABLERotary_MOTION
@@ -145,59 +127,57 @@ void RobotSandTableRotary::actuatorToPt(AxisInt32s& actuatorPos, AxisFloats& out
 
 void RobotSandTableRotary::correctStepOverflow(AxisPosition& curPos, AxesParams& axesParams)
 {
-    // Since the robot is polar each stepper can be considered to have a value between
-    // 0 and the stepsPerRot
+    // Since the robot is polar, axis 0 can be considered to have a value between 0 and the stepsPerRot
+    // Axis 1 can have a value between 0 (center) and stepsPerRot * (maxVal / unitsPerRot) (end)
+
     int32_t stepsPerRot0 = int32_t(roundf(axesParams.getStepsPerRot(0)));
     curPos._stepsFromHome.setVal(0, (curPos._stepsFromHome.getVal(0) + stepsPerRot0) % stepsPerRot0);
     int32_t stepsPerRot1 = int32_t(roundf(axesParams.getStepsPerRot(1)));
-    curPos._stepsFromHome.setVal(1, (curPos._stepsFromHome.getVal(1) + stepsPerRot1) % stepsPerRot1);
+    if(curPos._stepsFromHome.getVal(1) < 0) {
+        curPos._stepsFromHome.setVal(1, 0);
+    }
+
+    float maxLinear = -1;
+    axesParams.getMaxVal(1, maxLinear);
+    if(maxLinear == -1)
+        maxLinear = 100;
+
+    int32_t maxStepsAxis1 = stepsPerRot1 * (maxLinear / axesParams.getunitsPerRot(1));
+    if(curPos._stepsFromHome.getVal(1) > maxStepsAxis1) {
+        curPos._stepsFromHome.setVal(1, maxStepsAxis1);
+    }
 }
 
-bool RobotSandTableRotary::cartesianToPolar(AxisFloats& targetPt, AxisFloats& targetSoln1, 
-                    AxisFloats& targetSoln2, AxesParams& axesParams)
+bool RobotSandTableRotary::cartesianToPolar(AxisFloats& targetPt, AxisFloats& targetSoln1, AxesParams& axesParams)
 {
 	// Calculate arm lengths
 	// The maxVal for axis0 and axis1 are used to determine the arm lengths
 	// The radius of the machine is the sum of these two lengths
-	float shoulderElbowMM = 0, elbowHandMM = 0;
-	bool axis0MaxValid = axesParams.getMaxVal(0, shoulderElbowMM);
-	bool axis1MaxValid = axesParams.getMaxVal(1, elbowHandMM);
+	float linearLength = 0;
+
+	bool axis1MaxValid = axesParams.getMaxVal(1, linearLength);
     // If not valid set to some values to avoid arithmetic errors
-	if (!axis0MaxValid)
-		shoulderElbowMM = 100;
+
 	if (!axis1MaxValid)
-		elbowHandMM = 100;
+		linearLength = 100;
 
 	// Calculate distance from origin to pt (forms one side of triangle where arm segments form other sides)
-	float thirdSideL3MM = sqrt(pow(targetPt._pt[0], 2) + pow(targetPt._pt[1], 2));
+	float distFromOrigin = sqrt(pow(targetPt._pt[0], 2) + pow(targetPt._pt[1], 2));
 
-	// Check validity of position
-	bool posValid = thirdSideL3MM <= shoulderElbowMM + elbowHandMM;
+	// Check validity of position (distance from origin cannot be greater than linear axis max length)
+	bool posValid = distFromOrigin <= linearLength;
 
-	// Calculate angle from North to the point (note in atan2 X and Y are flipped from normal as angles are clockwise)
-	float delta1 = atan2(targetPt._pt[0], targetPt._pt[1]);
-	if (delta1 < 0)
-		delta1 += M_PI * 2;
+	// Calculate theta. Will always be POSITIVE (0 -> 2PI)
+	float theta = atan2(targetPt._pt[1], targetPt._pt[0]);
+	if (theta < 0)
+		theta += M_PI * 2;
 
-	// Calculate angle of triangle opposite elbow-hand side
-	float delta2 = AxisUtils::cosineRule(thirdSideL3MM, shoulderElbowMM, elbowHandMM);
+	// Calculate required radius
+	float rho = distFromOrigin / axis1MaxValid;
 
-	// Calculate angle of triangle opposite third side
-	float innerAngleOppThirdGamma = AxisUtils::cosineRule(shoulderElbowMM, elbowHandMM, thirdSideL3MM);
-
-	// The two pairs of angles that solve these equations
-	// alpha is the angle from shoulder to elbow
-	// beta is angle from elbow to hand
-	float alpha1rads = delta1 - delta2;
-	float beta1rads = alpha1rads - innerAngleOppThirdGamma + M_PI;
-	float alpha2rads = delta1 + delta2;
-	float beta2rads = alpha2rads + innerAngleOppThirdGamma - M_PI;
-
-	// Calculate the alpha and beta angles in degrees
-	targetSoln1.setVal(0, AxisUtils::r2d(AxisUtils::wrapRadians(alpha1rads + 2 * M_PI)));
-	targetSoln1.setVal(1, AxisUtils::r2d(AxisUtils::wrapRadians(beta1rads + 2 * M_PI)));
-	targetSoln2.setVal(0, AxisUtils::r2d(AxisUtils::wrapRadians(alpha2rads + 2 * M_PI)));
-	targetSoln2.setVal(1, AxisUtils::r2d(AxisUtils::wrapRadians(beta2rads + 2 * M_PI)));
+	//Return theta in DEGREES and rho.
+	targetSoln1.setVal(0, AxisUtils::r2d(AxisUtils::wrapRadians(theta)));
+	targetSoln1.setVal(1, rho);
 
 #ifdef DEBUG_SANDTABLE_CARTESIAN_TO_POLAR
     Log.trace("%scartesianToPolar target X%F Y%F l1 %F, l2 %F\n", MODULE_PREFIX,
@@ -216,15 +196,23 @@ bool RobotSandTableRotary::cartesianToPolar(AxisFloats& targetPt, AxisFloats& ta
 void RobotSandTableRotary::stepsToPolar(AxisInt32s& actuatorCoords, AxisFloats& rotationDegrees, AxesParams& axesParams)
 {
     // Axis 0 positive steps clockwise, axis 1 postive steps are anticlockwise
-    // Axis 0 zero steps is at 0 degrees, axis 1 zero steps is at 180 degrees
+    // Axis 0 zero steps is at 0 degrees, axis 1 zero steps is at 0 mm
     // All angles returned are in degrees clockwise from North
-    double axis0Degrees = AxisUtils::wrapDegrees(actuatorCoords.getVal(0) * 360 / axesParams.getStepsPerRot(0));
-    double axis1Degrees = AxisUtils::wrapDegrees(540 - (actuatorCoords.getVal(1) * 360 / axesParams.getStepsPerRot(1)));
-    rotationDegrees.set(axis0Degrees, axis1Degrees);
-#ifdef DEBUG_SANDTABLE_CARTESIAN_TO_POLAR
-    Log.trace("%sstepsToPolar: ax0Steps %d ax1Steps %d a %Fd b %Fd\n", MODULE_PREFIX,
-            actuatorCoords.getVal(0), actuatorCoords.getVal(1), rotationDegrees._pt[0], rotationDegrees._pt[1]);
-#endif
+    double currentTheta = AxisUtils::wrapDegrees(actuatorCoords.getVal(0) * 360 / axesParams.getStepsPerRot(0));
+
+    float maxLinear = -1;
+    axesParams.getMaxVal(1, maxLinear);
+    if(maxLinear == -1)
+        maxLinear = 100;
+
+    int32_t maxStepsRho = axesParams.getStepsPerRot(1) * (maxLinear / axesParams.getunitsPerRot(1));
+
+    double currentRho = actuatorCoords.getVal(1) / maxStepsRho;
+    rotationDegrees.set(currentTheta, currentRho);
+    #ifdef DEBUG_SANDTABLE_CARTESIAN_TO_POLAR
+        Log.trace("%sstepsToPolar: ax0Steps %d ax1Steps %d a %Fd b %Fd\n", MODULE_PREFIX,
+                actuatorCoords.getVal(0), actuatorCoords.getVal(1), rotationDegrees._pt[0], rotationDegrees._pt[1]);
+    #endif
 }
 
 float RobotSandTableRotary::calcRelativePolar(float targetRotation, float curRotation)
@@ -248,19 +236,35 @@ float RobotSandTableRotary::calcRelativePolar(float targetRotation, float curRot
 void RobotSandTableRotary::relativePolarToSteps(AxisFloats& relativePolar, AxisPosition& curAxisPositions, 
             AxisFloats& outActuator, AxesParams& axesParams)
 {
+    float maxLinear = -1;
+    axesParams.getMaxVal(1, maxLinear);
+    if(maxLinear == -1)
+        maxLinear = 100;
+
     // Convert relative polar to steps
-    int32_t stepsRel0 = int32_t(roundf(relativePolar.getVal(0) * axesParams.getStepsPerRot(0) / 360));
-    int32_t stepsRel1 = int32_t(roundf(-relativePolar.getVal(1) * axesParams.getStepsPerRot(1) / 360));
+    int32_t stepsRelTheta = int32_t(roundf(relativePolar.getVal(0) * axesParams.getStepsPerRot(0) / 360));
+
+    //Rho axis is a special one! Step it to rotate the gear the same degree as the theta.
+    //Theta is moving relativePolar.getVal(0) degrees, therefore rho would be moving 
+    //relativePolar.getVal(0) * axesParams.getStepsPerRot(1) steps.
+    float rhoCounteractSteps = relativePolar.getVal(0) * axesParams.getStepsPerRot(1);
+
+    //Then, rho really NEEDS to move relPolar[1] * maxLinear in mm.
+    //which, mm -> steps is (mm * mm/rot) * stepsPerRot
+    float rhoMM = relativePolar.getVal(1) * maxLinear;
+    float rhoActiveSteps = (rhoMM * axesParams.getunitsPerRot(1)) * axesParams.getStepsPerRot(1);
+    
+    int32_t stepsRelRho = int32_t(roundf(rhoCounteractSteps + rhoActiveSteps));
 
     // Add to existing
-    outActuator.setVal(0, curAxisPositions._stepsFromHome.getVal(0) + stepsRel0);
-    outActuator.setVal(1, curAxisPositions._stepsFromHome.getVal(1) + stepsRel1);
-#ifdef DEBUG_SANDTABLE_CARTESIAN_TO_POLAR
-    Log.trace("%srelativePolarToSteps: stepsRel0 %d stepsRel1 %d curSteps0 %d curSteps1 %d destSteps0 %F destSteps1 %F\n",
-            MODULE_PREFIX,
-            stepsRel0, stepsRel1, curAxisPositions._stepsFromHome.getVal(0), curAxisPositions._stepsFromHome.getVal(1),
-            outActuator.getVal(0), outActuator.getVal(1));
-#endif
+    outActuator.setVal(0, curAxisPositions._stepsFromHome.getVal(0) + stepsRelTheta);
+    outActuator.setVal(1, curAxisPositions._stepsFromHome.getVal(1) + stepsRelRho);
+    #ifdef DEBUG_SANDTABLE_CARTESIAN_TO_POLAR
+        Log.trace("%srelativePolarToSteps: stepsRel0 %d stepsRel1 %d curSteps0 %d curSteps1 %d destSteps0 %F destSteps1 %F\n",
+                MODULE_PREFIX,
+                stepsRel0, stepsRel1, curAxisPositions._stepsFromHome.getVal(0), curAxisPositions._stepsFromHome.getVal(1),
+                outActuator.getVal(0), outActuator.getVal(1));
+    #endif
 }
 
 void RobotSandTableRotary::convertCoords(RobotCommandArgs& cmdArgs, AxesParams& axesParams)
@@ -268,27 +272,23 @@ void RobotSandTableRotary::convertCoords(RobotCommandArgs& cmdArgs, AxesParams& 
     // Coordinates can be converted here if required
 }
 
-// Set robot attributes
+
 void RobotSandTableRotary::setRobotAttributes(AxesParams& axesParams, String& robotAttributes)
 {
     // Calculate max and min cartesian size of robot
 	// Calculate arm lengths
 	// The maxVal for axis0 and axis1 are used to determine the arm lengths
 	// The radius of the machine is the sum of these two lengths
-	float shoulderElbowMM = 0, elbowHandMM = 0;
-	bool axis0MaxValid = axesParams.getMaxVal(0, shoulderElbowMM);
-	bool axis1MaxValid = axesParams.getMaxVal(1, elbowHandMM);
-    // If not valid set to some values to avoid arithmetic errors
-	if (!axis0MaxValid)
-		shoulderElbowMM = 100;
-	if (!axis1MaxValid)
-		elbowHandMM = 100;
+	float maxLinear = -1;
+    axesParams.getMaxVal(1, maxLinear);
+    if(maxLinear == -1)
+        maxLinear = 100;
 
     // Set attributes
     constexpr int MAX_ATTR_STR_LEN = 400;
     char attrStr[MAX_ATTR_STR_LEN];
     sprintf(attrStr, "{\"sizeX\":%0.2f,\"sizeY\":%0.2f,\"sizeZ\":%0.2f,\"originX\":%0.2f,\"originY\":%0.2f,\"originZ\":%0.2f}",
-            (shoulderElbowMM+elbowHandMM)*2, (shoulderElbowMM+elbowHandMM)*2, 0.0,
-            (shoulderElbowMM+elbowHandMM), (shoulderElbowMM+elbowHandMM), 0.0);
+            maxLinear*2, maxLinear*2, 0.0,
+            maxLinear, maxLinear, 0.0);
     robotAttributes = attrStr;
 }
