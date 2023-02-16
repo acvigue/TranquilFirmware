@@ -7,8 +7,8 @@
 #include "Utils.h"
 #include "math.h"
 
-// #define DEBUG_SANDTABLERotary_MOTION 1
-// #define DEBUG_SANDTABLE_CARTESIAN_TO_POLAR 1
+#define DEBUG_SANDTABLERotary_MOTION 1
+#define DEBUG_SANDTABLE_CARTESIAN_TO_POLAR 1
 
 static const char* MODULE_PREFIX = "SandTableRotary: ";
 
@@ -39,9 +39,8 @@ bool RobotSandTableRotary::ptToActuator(AxisFloats& targetPt, AxisFloats& outAct
     // Val0 is theta
     // Val0 is rho
     AxisFloats curPolar;
-
     stepsToPolar(curAxisPositions._stepsFromHome, curPolar, axesParams);
-
+    Log.trace("%s ptToActuator STARTING RHO: %F\n", MODULE_PREFIX, curPolar.getVal(1));
     // Best relative polar solution
     AxisFloats relativePolarSolution;
 
@@ -61,10 +60,11 @@ bool RobotSandTableRotary::ptToActuator(AxisFloats& targetPt, AxisFloats& outAct
             Log.verbose("%sOut of bounds not allowed\n", MODULE_PREFIX);
             return false;
         }
+            Log.trace("%s ptToActuator ENDING RHO: %F\n", MODULE_PREFIX,targetPolar.getVal(1));
 
         // Find the minimum rotation for theta
         float theta1Rel = calcRelativePolar(targetPolar.getVal(0), curPolar.getVal(0));
-        float rhoRel = targetPolar.getVal(1) - targetPolar.getVal(0);
+        float rhoRel = targetPolar.getVal(1) - curPolar.getVal(1);
 
         relativePolarSolution.setVal(0, theta1Rel);
         relativePolarSolution.setVal(1, rhoRel);
@@ -114,13 +114,9 @@ void RobotSandTableRotary::actuatorToPt(AxisInt32s& actuatorPos, AxisFloats& out
 
     // Debug
 #ifdef DEBUG_SANDTABLERotary_MOTION
-    Log.verbose("%sacToPt s1 %d s2 %d alpha %F beta %F x %F y %F shel %F elha %F elx %F ely %F haX %F hay %F\n", MODULE_PREFIX, 
+    Log.verbose("%sacToPt s1 %d s2 %d theta %F rho %F\n", MODULE_PREFIX, 
                 actuatorPos.getVal(0), actuatorPos.getVal(1),
-                curPolar.getVal(0), curPolar.getVal(1),
-                elbowX + handXDiff, elbowY + handYDiff,
-                shoulderElbowMM, elbowHandMM,
-                elbowX, elbowY,
-                handXDiff, handYDiff);
+                curPolar.getVal(0), curPolar.getVal(1));
 #endif
 
 }
@@ -148,8 +144,8 @@ void RobotSandTableRotary::correctStepOverflow(AxisPosition& curPos, AxesParams&
         float currentRho = targetPolar.getVal(1);
         
         //steps from home for rho axis will be the current rho (0 -> 1) * maxStepsRho;
-        int32_t maxStepsRho = stepsPerRot1 * (maxLinear / axesParams.getunitsPerRot(1));
-        int32_t currentRhoSteps = int32_t(roundf(currentRho * maxStepsRho));
+        int32_t maxStepsRho = int32_t(roundf(float(axesParams.getStepsPerRot(1) * float(maxLinear / axesParams.getunitsPerRot(1)))));
+        int32_t currentRhoSteps = int32_t(roundf(float(currentRho) * float(maxStepsRho)));
         curPos._stepsFromHome.setVal(1, currentRhoSteps);
     }
 }
@@ -162,6 +158,7 @@ bool RobotSandTableRotary::cartesianToPolar(AxisFloats& targetPt, AxisFloats& ta
 	float linearLength = 0;
 
 	bool axis1MaxValid = axesParams.getMaxVal(1, linearLength);
+
     // If not valid set to some values to avoid arithmetic errors
 
 	if (!axis1MaxValid)
@@ -169,7 +166,6 @@ bool RobotSandTableRotary::cartesianToPolar(AxisFloats& targetPt, AxisFloats& ta
 
 	// Calculate distance from origin to pt (forms one side of triangle where arm segments form other sides)
 	float distFromOrigin = sqrt(pow(targetPt._pt[0], 2) + pow(targetPt._pt[1], 2));
-
 	// Check validity of position (distance from origin cannot be greater than linear axis max length)
 	bool posValid = distFromOrigin <= linearLength;
 
@@ -179,21 +175,18 @@ bool RobotSandTableRotary::cartesianToPolar(AxisFloats& targetPt, AxisFloats& ta
 		theta += M_PI * 2;
 
 	// Calculate required radius
-	float rho = distFromOrigin / axis1MaxValid;
+	float rho = float(distFromOrigin / linearLength);
 
 	//Return theta in DEGREES and rho.
 	targetSoln1.setVal(0, AxisUtils::r2d(AxisUtils::wrapRadians(theta)));
 	targetSoln1.setVal(1, rho);
 
 #ifdef DEBUG_SANDTABLE_CARTESIAN_TO_POLAR
-    Log.trace("%scartesianToPolar target X%F Y%F l1 %F, l2 %F\n", MODULE_PREFIX,
-            targetPt.getVal(0), targetPt.getVal(1),
-            shoulderElbowMM, elbowHandMM);	
-    Log.trace("%scartesianToPolar %s 3rdSide %Fmm D1 %Fd D2 %Fd innerAng %Fd\n", MODULE_PREFIX,
+    Log.trace("%scartesianToPolar target X%F Y%F\n", MODULE_PREFIX,
+            targetPt.getVal(0), targetPt.getVal(1));	
+    Log.trace("%scartesianToPolar %s theta %F rho %F\n", MODULE_PREFIX,
             posValid ? "ok" : "OUT_OF_BOUNDS",
-            thirdSideL3MM, AxisUtils::r2d(delta1), AxisUtils::r2d(delta2), AxisUtils::r2d(innerAngleOppThirdGamma));
-    Log.trace("%scartesianToActuator alpha1 %Fd, beta1 %Fd\n", MODULE_PREFIX,
-		    targetSoln1.getVal(0), targetSoln1.getVal(1));
+            theta, rho);
 #endif
 
     return posValid;
@@ -211,9 +204,9 @@ void RobotSandTableRotary::stepsToPolar(AxisInt32s& actuatorCoords, AxisFloats& 
     if(maxLinear == -1)
         maxLinear = 100;
 
-    int32_t maxStepsRho = axesParams.getStepsPerRot(1) * (maxLinear / axesParams.getunitsPerRot(1));
-
-    double currentRho = actuatorCoords.getVal(1) / maxStepsRho;
+    int32_t maxStepsRho = int32_t(roundf(float(axesParams.getStepsPerRot(1) * float(maxLinear / axesParams.getunitsPerRot(1)))));
+    Log.trace("%sstepsToPolar maxStepsRho %d", MODULE_PREFIX, maxStepsRho);
+    float currentRho = float(actuatorCoords.getVal(1) / float(maxStepsRho));
     rotationDegrees.set(currentTheta, currentRho);
     #ifdef DEBUG_SANDTABLE_CARTESIAN_TO_POLAR
         Log.trace("%sstepsToPolar: ax0Steps %d ax1Steps %d a %Fd b %Fd\n", MODULE_PREFIX,
@@ -248,29 +241,35 @@ void RobotSandTableRotary::relativePolarToSteps(AxisFloats& relativePolar, AxisP
         maxLinear = 100;
 
     // Convert relative polar to steps
-    int32_t stepsRelTheta = int32_t(roundf(relativePolar.getVal(0) * axesParams.getStepsPerRot(0) / 360));
+
+    float fractionalRotation = float(relativePolar.getVal(0) / float(360));
+    int32_t stepsRelTheta = int32_t(roundf(float(fractionalRotation * float(axesParams.getStepsPerRot(0)))));
+    Log.trace("%sstepsRelTheta: %d\n", MODULE_PREFIX, stepsRelTheta);
 
     //Rho axis is a special one! Step it to rotate the gear the same degree as the theta.
     //Theta is moving relativePolar.getVal(0) degrees, therefore rho would be moving 
     //relativePolar.getVal(0) * axesParams.getStepsPerRot(1) steps.
-    float rhoCounteractSteps = relativePolar.getVal(0) * axesParams.getStepsPerRot(1);
+    float rhoCounteractSteps = float(fractionalRotation * float(axesParams.getStepsPerRot(1)));
+    Log.trace("%srhoCounteractSteps: %F\n", MODULE_PREFIX, rhoCounteractSteps);
 
     //Then, rho really NEEDS to move relPolar[1] * maxLinear in mm.
     //which, mm -> steps is (mm / mm/rot) * stepsPerRot
     
     float rhoMM = relativePolar.getVal(1) * maxLinear;
+    Log.trace("%srhoMM: %F\n", MODULE_PREFIX, rhoMM);
     float rhoActiveSteps = (rhoMM / axesParams.getunitsPerRot(1)) * axesParams.getStepsPerRot(1);
-    
+    Log.trace("%srhoActiveSteps: %F\n", MODULE_PREFIX, rhoActiveSteps);
+
     int32_t stepsRelRho = int32_t(roundf(rhoCounteractSteps + rhoActiveSteps));
 
     // Add to existing
     outActuator.setVal(0, curAxisPositions._stepsFromHome.getVal(0) + stepsRelTheta);
     outActuator.setVal(1, curAxisPositions._stepsFromHome.getVal(1) + stepsRelRho);
     #ifdef DEBUG_SANDTABLE_CARTESIAN_TO_POLAR
-        Log.trace("%srelativePolarToSteps: stepsRel0 %d stepsRel1 %d curSteps0 %d curSteps1 %d destSteps0 %F destSteps1 %F\n",
+        Log.trace("%srelativePolarToSteps: stepsRel0 %d stepsRel1 %d curSteps0 %d curSteps1 %d destSteps0 %F destSteps1 %F inTheta %F inRho %F\n",
                 MODULE_PREFIX,
-                stepsRel0, stepsRel1, curAxisPositions._stepsFromHome.getVal(0), curAxisPositions._stepsFromHome.getVal(1),
-                outActuator.getVal(0), outActuator.getVal(1));
+                stepsRelTheta, stepsRelRho, curAxisPositions._stepsFromHome.getVal(0), curAxisPositions._stepsFromHome.getVal(1),
+                outActuator.getVal(0), outActuator.getVal(1), relativePolar.getVal(0), relativePolar.getVal(1));
     #endif
 }
 

@@ -83,6 +83,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
             Log.info("%sOoops, no TSL2561 detected ... Check your wiring or I2C ADDR!\n", MODULE_PREFIX);
             _sensorEnabled = 0;
         } else {
+            Log.info("%sTSL2561 detected!\n", MODULE_PREFIX);
             _tsl->enableAutoRange(true);            /* Auto-gain ... switches automatically between 1x and 16x */
             _tsl->setIntegrationTime(TSL2561_INTEGRATIONTIME_13MS);      /* fast but low resolution */   
         }
