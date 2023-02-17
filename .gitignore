@@ -1,6 +1,6 @@
 # Python intermediates
 *.pyc
-
+.DS_Store
 # Intermediates
 fastmathparser.sdf
 TestArstParser.sdf
