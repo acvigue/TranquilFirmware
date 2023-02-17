@@ -135,6 +135,15 @@ void WebServer::addEndpoints(RestAPIEndpoints &endpoints)
                 pEndpoint->callbackBody(reqUrl, data, len, index, total);
             }
         );
+
+        //Handle preflight requests
+        _pServer->on(("/" + pEndpoint->_endpointStr).c_str(), HTTP_OPTIONS, 
+        
+            // Handler for main request URL
+            [pEndpoint](AsyncWebServerRequest *request) {
+                request->send(200);
+            }
+        );
     }
 }
 
