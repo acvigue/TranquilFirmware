@@ -21,6 +21,7 @@ public:
     void serviceStrip();
     void updateLedFromConfig(const char* pLedJson);
     const char* getConfigStrPtr();
+    int getLuxLevel();
     void setSleepMode(int sleep);
 
 private:
@@ -50,6 +51,7 @@ private:
     int _redVal;
     int _greenVal;
     int _blueVal;
+    int _luxLevel;
     CRGB *_leds;
     Adafruit_TSL2561_Unified *_tsl;
     bool ledConfigChanged = false;

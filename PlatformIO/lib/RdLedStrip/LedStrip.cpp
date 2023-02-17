@@ -191,6 +191,13 @@ const char* LedStrip::getConfigStrPtr() {
     return _ledNvValues.getConfigCStrPtr();
 }
 
+int LedStrip::getLuxLevel() {
+    if(_sensorEnabled) {
+        return _luxLevel;
+    }
+    return 0;
+}
+
 void LedStrip::service()
 {
     // Check if active
@@ -202,20 +209,21 @@ void LedStrip::service()
     {
         // TODO Auto Dim isn't working as expected - this should never go enabled right now
         // Check if we need to read and evaluate the light sensor
-        if (_autoDim) {
-            if (_sensorEnabled == 1 && (millis() - _last_check_tsl_time > 3000)) {
+        if (_sensorEnabled == 1 && (millis() - _last_check_tsl_time > 3000)) {
 
-                sensors_event_t event;
-                _tsl->getEvent(&event);
+            sensors_event_t event;
+            _tsl->getEvent(&event);
+            _luxLevel = event.light;
 
+            if(_autoDim) {
                 byte ledBrightness;
-                if(event.light > 25) {
+                if(_luxLevel > 25) {
                     //high brightness
                     ledBrightness = 100;
-                } else if(event.light > 10) {
+                } else if(_luxLevel > 10) {
                     //low brightness
                     ledBrightness = 50;
-                } else if(event.light > 1) {
+                } else if(_luxLevel > 1) {
                     //low brightness
                     ledBrightness = 5;
                 } else {
@@ -226,9 +234,9 @@ void LedStrip::service()
                     _ledBrightness = ledBrightness;
                     ledConfigChanged = true;
                 }
-
-                _last_check_tsl_time = millis();
             }
+
+            _last_check_tsl_time = millis();
         }
     }
 

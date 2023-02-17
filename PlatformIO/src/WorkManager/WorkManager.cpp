@@ -57,6 +57,10 @@ void WorkManager::queryStatus(String &respStr)
     // Log.trace("%squeryStatus innerJsonLen %d ledStripLen %d ledStrip <%s>\n", MODULE_PREFIX, innerJsonStr.length(), ledStrip.length(), ledStrip.c_str());
     if ((innerJsonStr.length() > 0) && (ledStrip.length() > 2))
         innerJsonStr += ",";
+
+    String lux = String(_ledStrip.getLuxLevel());
+    innerJsonStr += "\"lux\": " + lux + ",";
+
     innerJsonStr += ledStrip.substring(1, ledStrip.length() - 1);
     // Time of Day
     String timeJsonStr;
