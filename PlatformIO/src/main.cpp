@@ -122,7 +122,7 @@ ConfigBase hwConfig(hwConfigJSON);
 ConfigNVS robotConfig("robot", 2000);
 
 // Config for WiFi
-ConfigNVS wifiConfig("wifi", 100);
+ConfigNVS wifiConfig("wifi", 200);
 
 // Config for NTP
 ConfigNVS ntpConfig("ntp", 100);

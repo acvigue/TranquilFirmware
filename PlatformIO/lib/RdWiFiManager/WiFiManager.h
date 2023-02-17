@@ -14,7 +14,11 @@ class WiFiManager
 private:
     bool _wifiEnabled;
     String _ssid;
+    int _connectionMode;
     String _password;
+    String _peapIdentity;
+    String _peapUsername;
+    String _peapPassword;
     static String _hostname;
     String _defaultHostname;
     unsigned long _lastWifiBeginAttemptMs;
@@ -39,14 +43,16 @@ public:
         _deviceRestartPending = false;
         _deviceRestartMs = 0;
     }
-
+    enum connectionType { open, psk, peap };
     bool isEnabled();
     String getHostname();
     void setup(ConfigBase& hwConfig, ConfigBase *pSysConfig, const char *defaultHostname, StatusIndicator *pStatusLed);
     void service();
     bool isConnected();
     String formConfigStr();
-    void setCredentials(String &ssid, String &pw, String &hostname, bool resetToImplement);
+    void setCredentialsPSK(String &ssid, String &pw, String &hostname, bool resetToImplement);
+    void setCredentialsOPEN(String &ssid, String &hostname, bool resetToImplement);
+    void setCredentialsPEAP(String &ssid, String &identity, String &username, String &password, String &hostname, bool resetToImplement);
     void clearCredentials();
     static void wiFiEventHandler(WiFiEvent_t event);
     static const char* getEventName(WiFiEvent_t event);

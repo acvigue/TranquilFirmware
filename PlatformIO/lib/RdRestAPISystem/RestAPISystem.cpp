@@ -28,9 +28,15 @@ RestAPISystem::RestAPISystem(WiFiManager& wifiManager, MQTTManager& mqttManager,
 
 void RestAPISystem::setup(RestAPIEndpoints &endpoints)
 {
-    endpoints.addEndpoint("w", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET, 
-                    std::bind(&RestAPISystem::apiWifiSet, this, std::placeholders::_1, std::placeholders::_2),
-                    "Setup WiFi SSID/password/hostname");
+    endpoints.addEndpoint("wpsk", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET, 
+                    std::bind(&RestAPISystem::apiWifiSetPSK, this, std::placeholders::_1, std::placeholders::_2),
+                    "Setup WiFi SSID/password/hostname (PSK)");
+    endpoints.addEndpoint("wopen", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET, 
+                    std::bind(&RestAPISystem::apiWifiSetOPEN, this, std::placeholders::_1, std::placeholders::_2),
+                    "Setup WiFi SSID/hostname (OPEN)");
+    endpoints.addEndpoint("wpeap", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET, 
+                    std::bind(&RestAPISystem::apiWifiSetPEAP, this, std::placeholders::_1, std::placeholders::_2),
+                    "Setup WiFi SSID/identity/username/password/hostname (PEAP)");
     endpoints.addEndpoint("wc", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET, 
                     std::bind(&RestAPISystem::apiWifiClear, this, std::placeholders::_1, std::placeholders::_2),
                     "Clear WiFi settings");
@@ -203,7 +209,7 @@ void RestAPISystem::service()
     }
 }
 
-void RestAPISystem::apiWifiSet(String &reqStr, String &respStr)
+void RestAPISystem::apiWifiSetPSK(String &reqStr, String &respStr)
 {
     bool rslt = false;
     // Get SSID
@@ -219,7 +225,55 @@ void RestAPISystem::apiWifiSet(String &reqStr, String &respStr)
     if (ssid.length() != 0 && pw.length() != 0)
     {
         Log.notice("%sWiFi Credentials Set SSID %s hostname %s\n", MODULE_PREFIX, ssid.c_str(), hostname.c_str());
-        _wifiManager.setCredentials(ssid, pw, hostname, true);
+        _wifiManager.setCredentialsPSK(ssid, pw, hostname, true);
+        rslt = true;
+    }
+    Utils::setJsonBoolResult(respStr, rslt);
+}
+
+void RestAPISystem::apiWifiSetOPEN(String &reqStr, String &respStr)
+{
+    bool rslt = false;
+    // Get SSID
+    String ssid = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 1);
+    Log.trace("%sWiFi SSID %s\n", MODULE_PREFIX, ssid.c_str());
+    // Get pw
+    String hostname = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 2);
+    Log.trace("%sHostname %s\n", MODULE_PREFIX, hostname.c_str());
+
+    // Check if both SSID and pw have now been set
+    if (ssid.length() != 0)
+    {
+        Log.notice("%sWiFi Credentials Set SSID %s hostname %s\n", MODULE_PREFIX, ssid.c_str(), hostname.c_str());
+        _wifiManager.setCredentialsOPEN(ssid, hostname, true);
+        rslt = true;
+    }
+    Utils::setJsonBoolResult(respStr, rslt);
+}
+
+void RestAPISystem::apiWifiSetPEAP(String &reqStr, String &respStr)
+{
+    bool rslt = false;
+    // Get SSID
+    String ssid = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 1);
+    Log.trace("%sWiFi SSID %s\n", MODULE_PREFIX, ssid.c_str());
+    // Get identity
+    String identity = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 2);
+    Log.trace("%sWiFi Identity %s\n", MODULE_PREFIX, identity.c_str());
+    // Get username
+    String username = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 3);
+    Log.trace("%sWiFi Username %s\n", MODULE_PREFIX, username.c_str());
+    // Get password
+    String password = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 4);
+    Log.trace("%sWiFi Password %s\n", MODULE_PREFIX, password.c_str());
+    // Get hostname
+    String hostname = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 5);
+    Log.trace("%sHostname %s\n", MODULE_PREFIX, hostname.c_str());
+    // Check if both SSID and pw have now been set
+    if (ssid.length() != 0 && username.length() != 0)
+    {
+        Log.notice("%sWiFi Credentials Set SSID %s hostname %s\n", MODULE_PREFIX, ssid.c_str(), hostname.c_str());
+        _wifiManager.setCredentialsPEAP(ssid, identity, username, password, hostname, true);
         rslt = true;
     }
     Utils::setJsonBoolResult(respStr, rslt);

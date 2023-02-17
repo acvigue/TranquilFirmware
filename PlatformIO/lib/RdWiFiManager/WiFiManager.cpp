@@ -7,6 +7,7 @@
 #include "ConfigNVS.h"
 #include "StatusIndicator.h"
 #include <ESPmDNS.h>
+#include "esp_wpa2.h"
 
 static const char* MODULE_PREFIX = "WiFiManager: ";
 
@@ -31,9 +32,15 @@ void WiFiManager::setup(ConfigBase& hwConfig, ConfigBase *pSysConfig,
     _pConfigBase = pSysConfig;
     _defaultHostname = defaultHostname;
     _pStatusLed = pStatusLed;
+    _connectionMode = pSysConfig->getLong("WiFiMode", 1);
+
     // Get the SSID, password and hostname if available
     _ssid = pSysConfig->getString("WiFiSSID", "");
     _password = pSysConfig->getString("WiFiPW", "");
+    _peapIdentity = pSysConfig->getString("WiFiPEAPIdentity", "");
+    _peapUsername = pSysConfig->getString("WiFiPEAPUsername", "");
+    _peapPassword = pSysConfig->getString("WiFiPEAPPassword", "");
+
     _hostname = pSysConfig->getString("WiFiHostname", _defaultHostname.c_str());
     // Set an event handler for WiFi events
     if (_wifiEnabled)
@@ -41,6 +48,21 @@ void WiFiManager::setup(ConfigBase& hwConfig, ConfigBase *pSysConfig,
         WiFi.onEvent(wiFiEventHandler);
         // Set the mode to STA
         WiFi.mode(WIFI_STA);
+
+        //If using PEAP, initialize.
+        if(_connectionMode == connectionType::peap) {
+            if(_peapIdentity.length() > 0) {
+                esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)_peapIdentity.c_str(), strlen(_peapIdentity.c_str()));
+            }
+            if(_peapUsername.length() > 0) {
+                esp_wifi_sta_wpa2_ent_set_username((uint8_t *)_peapUsername.c_str(), strlen(_peapUsername.c_str()));
+            }
+            if(_peapPassword.length() > 0) {
+                esp_wifi_sta_wpa2_ent_set_password((uint8_t *)_peapPassword.c_str(), strlen(_peapPassword.c_str()));
+            }
+            esp_wpa2_config_t config = WPA2_CONFIG_INIT_DEFAULT();
+            esp_wifi_sta_wpa2_ent_enable(&config);
+        }
     }
 }
 
@@ -67,7 +89,14 @@ void WiFiManager::service()
                     _wifiFirstBeginDone ? TIME_BETWEEN_WIFI_BEGIN_ATTEMPTS_MS : TIME_BEFORE_FIRST_BEGIN_MS))
         {
             Log.notice("%snotConn WiFi.begin SSID %s\n", MODULE_PREFIX, _ssid.c_str());
-            WiFi.begin(_ssid.c_str(), _password.c_str());
+            if(_connectionMode == connectionType::psk) {
+                WiFi.begin(_ssid.c_str(), _password.c_str());
+            } else if(_connectionMode == connectionType::open) {
+                WiFi.begin(_ssid.c_str());
+            } else if(_connectionMode == connectionType::peap) {
+                //EAP was initialized earlier!
+                WiFi.begin(_ssid.c_str());
+            }
             WiFi.setHostname(_hostname.c_str());
             _lastWifiBeginAttemptMs = millis();
             _wifiFirstBeginDone = true;
@@ -82,14 +111,66 @@ bool WiFiManager::isConnected()
 
 String WiFiManager::formConfigStr()
 {
-    return "{\"WiFiSSID\":\"" + _ssid + "\",\"WiFiPW\":\"" + _password + "\",\"WiFiHostname\":\"" + _hostname + "\"}";
+    return "{\"WiFiMode\":" + String(_connectionMode) + ",\"WiFiSSID\":\"" + _ssid + "\",\"WiFiPW\":\"" + _password + "\",\"WiFiPEAPIdentity\":\"" + _peapIdentity + "\",\"WiFiPEAPUsername\":\"" + _peapUsername + "\",\"WiFiPEAPPassword\":\"" + _peapPassword + "\",\"WiFiHostname\":\"" + _hostname + "\"}";
 }
 
-void WiFiManager::setCredentials(String &ssid, String &pw, String &hostname, bool resetToImplement)
+void WiFiManager::setCredentialsPSK(String &ssid, String &pw, String &hostname, bool resetToImplement)
 {
     // Set credentials
     _ssid = ssid;
     _password = pw;
+    _connectionMode = connectionType::psk;
+    if (hostname.length() == 0)
+        Log.trace("%shostname not set, staying with %s\n", MODULE_PREFIX, _hostname.c_str());
+    else
+        _hostname = hostname;
+    if (_pConfigBase)
+    {
+        _pConfigBase->setConfigData(formConfigStr().c_str());
+        _pConfigBase->writeConfig();
+    }
+
+    // Check if reset required
+    if (resetToImplement)
+    {
+        Log.trace("%ssetCredentials ... Reset pending\n", MODULE_PREFIX);
+        _deviceRestartPending = true;
+        _deviceRestartMs = millis();
+    }
+}
+
+void WiFiManager::setCredentialsPEAP(String &ssid, String &identity, String &username, String &password, String &hostname, bool resetToImplement)
+{
+    // Set credentials
+    _ssid = ssid;
+    _peapIdentity = identity;
+    _peapUsername = username;
+    _peapPassword = password;
+    _connectionMode = connectionType::peap;
+    if (hostname.length() == 0)
+        Log.trace("%shostname not set, staying with %s\n", MODULE_PREFIX, _hostname.c_str());
+    else
+        _hostname = hostname;
+    if (_pConfigBase)
+    {
+        _pConfigBase->setConfigData(formConfigStr().c_str());
+        _pConfigBase->writeConfig();
+    }
+
+    // Check if reset required
+    if (resetToImplement)
+    {
+        Log.trace("%ssetCredentials ... Reset pending\n", MODULE_PREFIX);
+        _deviceRestartPending = true;
+        _deviceRestartMs = millis();
+    }
+}
+
+void WiFiManager::setCredentialsOPEN(String &ssid, String &hostname, bool resetToImplement)
+{
+    // Set credentials
+    _ssid = ssid;
+    _connectionMode = connectionType::open;
     if (hostname.length() == 0)
         Log.trace("%shostname not set, staying with %s\n", MODULE_PREFIX, _hostname.c_str());
     else

@@ -7,8 +7,8 @@
 #include "Utils.h"
 #include "math.h"
 
-#define DEBUG_SANDTABLERotary_MOTION 1
-#define DEBUG_SANDTABLE_CARTESIAN_TO_POLAR 1
+//#define DEBUG_SANDTABLERotary_MOTION 1
+//#define DEBUG_SANDTABLE_CARTESIAN_TO_POLAR 1
 
 static const char* MODULE_PREFIX = "SandTableRotary: ";
 
@@ -40,7 +40,6 @@ bool RobotSandTableRotary::ptToActuator(AxisFloats& targetPt, AxisFloats& outAct
     // Val0 is rho
     AxisFloats curPolar;
     stepsToPolar(curAxisPositions._stepsFromHome, curPolar, axesParams);
-    Log.trace("%s ptToActuator STARTING RHO: %F\n", MODULE_PREFIX, curPolar.getVal(1));
     // Best relative polar solution
     AxisFloats relativePolarSolution;
 
@@ -60,7 +59,6 @@ bool RobotSandTableRotary::ptToActuator(AxisFloats& targetPt, AxisFloats& outAct
             Log.verbose("%sOut of bounds not allowed\n", MODULE_PREFIX);
             return false;
         }
-            Log.trace("%s ptToActuator ENDING RHO: %F\n", MODULE_PREFIX,targetPolar.getVal(1));
 
         // Find the minimum rotation for theta
         float theta1Rel = calcRelativePolar(targetPolar.getVal(0), curPolar.getVal(0));
@@ -205,7 +203,6 @@ void RobotSandTableRotary::stepsToPolar(AxisInt32s& actuatorCoords, AxisFloats& 
         maxLinear = 100;
 
     int32_t maxStepsRho = int32_t(roundf(float(axesParams.getStepsPerRot(1) * float(maxLinear / axesParams.getunitsPerRot(1)))));
-    Log.trace("%sstepsToPolar maxStepsRho %d", MODULE_PREFIX, maxStepsRho);
     float currentRho = float(actuatorCoords.getVal(1) / float(maxStepsRho));
     rotationDegrees.set(currentTheta, currentRho);
     #ifdef DEBUG_SANDTABLE_CARTESIAN_TO_POLAR
@@ -244,21 +241,17 @@ void RobotSandTableRotary::relativePolarToSteps(AxisFloats& relativePolar, AxisP
 
     float fractionalRotation = float(relativePolar.getVal(0) / float(360));
     int32_t stepsRelTheta = int32_t(roundf(float(fractionalRotation * float(axesParams.getStepsPerRot(0)))));
-    Log.trace("%sstepsRelTheta: %d\n", MODULE_PREFIX, stepsRelTheta);
 
     //Rho axis is a special one! Step it to rotate the gear the same degree as the theta.
     //Theta is moving relativePolar.getVal(0) degrees, therefore rho would be moving 
     //relativePolar.getVal(0) * axesParams.getStepsPerRot(1) steps.
     float rhoCounteractSteps = float(fractionalRotation * float(axesParams.getStepsPerRot(1)));
-    Log.trace("%srhoCounteractSteps: %F\n", MODULE_PREFIX, rhoCounteractSteps);
 
     //Then, rho really NEEDS to move relPolar[1] * maxLinear in mm.
     //which, mm -> steps is (mm / mm/rot) * stepsPerRot
     
     float rhoMM = relativePolar.getVal(1) * maxLinear;
-    Log.trace("%srhoMM: %F\n", MODULE_PREFIX, rhoMM);
     float rhoActiveSteps = (rhoMM / axesParams.getunitsPerRot(1)) * axesParams.getStepsPerRot(1);
-    Log.trace("%srhoActiveSteps: %F\n", MODULE_PREFIX, rhoActiveSteps);
 
     int32_t stepsRelRho = int32_t(roundf(rhoCounteractSteps + rhoActiveSteps));
 

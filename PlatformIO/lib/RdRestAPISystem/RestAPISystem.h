@@ -51,7 +51,9 @@ public:
     void service();
 
     // WiFi settings
-    void apiWifiSet(String &reqStr, String &respStr);
+    void apiWifiSetPSK(String &reqStr, String &respStr);
+    void apiWifiSetOPEN(String &reqStr, String &respStr);
+    void apiWifiSetPEAP(String &reqStr, String &respStr);
     void apiWifiClear(String &reqStr, String &respStr);
     void apiWifiExtAntenna(String &reqStr, String &respStr);
     void apiWifiIntAntenna(String &reqStr, String &respStr);
