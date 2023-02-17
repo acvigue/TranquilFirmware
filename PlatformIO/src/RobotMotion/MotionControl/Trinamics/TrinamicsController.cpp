@@ -95,7 +95,7 @@ void TrinamicsController::configure(const char *configJSON)
             driver_1.reset();
             driver_2.reset();
 
-            //driver_1.begin();
+            driver_1.begin();
             driver_1.toff(_toff);                 // Enables driver in software
             driver_1.rms_current(_irun);        // Set motor RMS current
             driver_1.microsteps(_msteps);          // Set microsteps to 1/16th
@@ -104,17 +104,19 @@ void TrinamicsController::configure(const char *configJSON)
 
             if(_stealthChop == 1) {
                 driver_1.pwm_autoscale(true);
+                driver_1.en_spreadCycle(false);
             } else {
                 driver_1.en_spreadCycle(true);
             }
 
-            //driver_2.begin();
+            driver_2.begin();
             driver_2.toff(_toff);                 // Enables driver in software
             driver_2.rms_current(_irun);        // Set motor RMS current
             driver_2.microsteps(_msteps);          // Set microsteps to 1/16th
             driver_2.intpol(true);
             if(_stealthChop == 1) {
                 driver_2.pwm_autoscale(true);
+                driver_2.en_spreadCycle(false);
             } else {
                 driver_2.en_spreadCycle(true);
             }

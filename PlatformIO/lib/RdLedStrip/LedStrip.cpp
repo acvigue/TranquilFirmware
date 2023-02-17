@@ -192,7 +192,7 @@ const char* LedStrip::getConfigStrPtr() {
 }
 
 int LedStrip::getLuxLevel() {
-    if(_sensorEnabled) {
+    if(_sensorEnabled == 1) {
         return _luxLevel;
     }
     return 0;
@@ -214,6 +214,7 @@ void LedStrip::service()
             sensors_event_t event;
             _tsl->getEvent(&event);
             _luxLevel = event.light;
+            Log.trace("%s lux: %d", MODULE_PREFIX, _luxLevel);
 
             if(_autoDim) {
                 byte ledBrightness;

@@ -111,25 +111,18 @@ void RobotSandTableRotary::actuatorToPt(AxisInt32s& actuatorPos, AxisFloats& out
     outPt.setVal(1, y);    
 
     // Debug
-#ifdef DEBUG_SANDTABLERotary_MOTION
     Log.verbose("%sacToPt s1 %d s2 %d theta %F rho %F\n", MODULE_PREFIX, 
                 actuatorPos.getVal(0), actuatorPos.getVal(1),
                 curPolar.getVal(0), curPolar.getVal(1));
-#endif
-
 }
 
 void RobotSandTableRotary::correctStepOverflow(AxisPosition& curPos, AxesParams& axesParams)
 {
     // Since the robot is polar, axis 0 can be considered to have a value between 0 and the stepsPerRot
     // Axis 1 can have a value between 0 (center) and stepsPerRot * (maxVal / unitsPerRot) (end)
-
+    Log.verbose("%scorrectoverflow\n", MODULE_PREFIX);
     int32_t stepsPerRot0 = int32_t(roundf(axesParams.getStepsPerRot(0)));
     curPos._stepsFromHome.setVal(0, (curPos._stepsFromHome.getVal(0) + stepsPerRot0) % stepsPerRot0);
-    int32_t stepsPerRot1 = int32_t(roundf(axesParams.getStepsPerRot(1)));
-    if(curPos._stepsFromHome.getVal(1) < 0) {
-        curPos._stepsFromHome.setVal(1, 0);
-    }
 
     AxisFloats targetPolar;
     bool isValid = cartesianToPolar(curPos._axisPositionMM, targetPolar, axesParams);
@@ -143,6 +136,7 @@ void RobotSandTableRotary::correctStepOverflow(AxisPosition& curPos, AxesParams&
         
         //steps from home for rho axis will be the current rho (0 -> 1) * maxStepsRho;
         int32_t maxStepsRho = int32_t(roundf(float(axesParams.getStepsPerRot(1) * float(maxLinear / axesParams.getunitsPerRot(1)))));
+        
         int32_t currentRhoSteps = int32_t(roundf(float(currentRho) * float(maxStepsRho)));
         curPos._stepsFromHome.setVal(1, currentRhoSteps);
     }
