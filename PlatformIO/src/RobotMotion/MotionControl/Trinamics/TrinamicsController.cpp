@@ -52,7 +52,7 @@ void TrinamicsController::configure(const char *configJSON)
     String mcChip = RdJson::getString("chip", "NONE", motionController.c_str());
     Log.trace("%sconfigure motionController %s chip %s\n", MODULE_PREFIX, motionController.c_str(), mcChip.c_str());
 
-    if ((mcChip == "TMC2208"))
+    if ((mcChip == "TMC2208" || mcChip == "TMC2209"))
     {
         // SPI settings
         
@@ -82,13 +82,56 @@ void TrinamicsController::configure(const char *configJSON)
         int _irun = RdJson::getDouble("run_current", 600, motionController.c_str());
         int _msteps = RdJson::getDouble("microsteps", 16, motionController.c_str());
         int _stealthChop = RdJson::getDouble("stealthChop", 0, motionController.c_str()); 
-        // Configure TMC2130s
+        
+        // Configure TMC2208s
         if (mcChip == "TMC2208")
         {
             HardwareSerial serial1 = HardwareSerial(1);
             HardwareSerial serial2 = HardwareSerial(2);
             TMC2208Stepper driver_1 = TMC2208Stepper(&serial1, 0.11f);
             TMC2208Stepper driver_2 = TMC2208Stepper(&serial2, 0.11f);
+
+            serial1.begin(115200, SERIAL_8N1, 34, _tx1);
+            serial2.begin(115200, SERIAL_8N1, 34, _tx2);
+            driver_1.reset();
+            driver_2.reset();
+
+            driver_1.begin();
+            driver_1.toff(_toff);                 // Enables driver in software
+            driver_1.rms_current(_irun);        // Set motor RMS current
+            driver_1.microsteps(_msteps);          // Set microsteps to 1/16th
+            driver_1.intpol(true);
+            //driver_1.pwm_autoscale(true);
+
+            if(_stealthChop == 1) {
+                driver_1.pwm_autoscale(true);
+                driver_1.en_spreadCycle(false);
+            } else {
+                driver_1.en_spreadCycle(true);
+            }
+
+            driver_2.begin();
+            driver_2.toff(_toff);                 // Enables driver in software
+            driver_2.rms_current(_irun);        // Set motor RMS current
+            driver_2.microsteps(_msteps);          // Set microsteps to 1/16th
+            driver_2.intpol(true);
+            if(_stealthChop == 1) {
+                driver_2.pwm_autoscale(true);
+                driver_2.en_spreadCycle(false);
+            } else {
+                driver_2.en_spreadCycle(true);
+            }
+
+            Log.trace("%s trinamics: RMS %i, %i msteps, %i toff\n", MODULE_PREFIX, _irun, _msteps, _toff);
+        }
+
+        // Configure TMC2130s
+        if (mcChip == "TMC2209")
+        {
+            HardwareSerial serial1 = HardwareSerial(1);
+            HardwareSerial serial2 = HardwareSerial(2);
+            TMC2209Stepper driver_1 = TMC2209Stepper(&serial1, 0.11f, 0);
+            TMC2209Stepper driver_2 = TMC2209Stepper(&serial2, 0.11f, 0);
 
             serial1.begin(115200, SERIAL_8N1, 34, _tx1);
             serial2.begin(115200, SERIAL_8N1, 34, _tx2);
