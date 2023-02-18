@@ -15,6 +15,7 @@ public:
     static double cosineRule(double a, double b, double c);
     static double wrapRadians(double angle);
     static double wrapDegrees(double angle);
+    static float wrapFloat(float x, float min, float max);
     static double r2d(double angleRadians);
     static double d2r(double angleDegrees);
     static bool isApprox(double v1, double v2, double withinRng = 0.0001);

@@ -57,9 +57,8 @@ private:
 
 private:
     static bool cartesianToPolar(AxisFloats& targetPt, AxisFloats& targetSoln1, AxesParams& axesParams);
-    static void stepsToPolar(AxisInt32s& actuatorCoords, AxisFloats& rotationDegrees, AxesParams& axesParams);
     static float calcRelativePolar(float targetRotation, float curRotation);
     static void relativePolarToSteps(AxisFloats& relativePolar, AxisPosition& curAxisPositions, 
             AxisFloats& outActuator, AxesParams& axesParams);
-
+    static void actuatorToPolar(AxisInt32s &actuatorCoords, AxisFloats &polarCoords, AxesParams &axesParams);
 };

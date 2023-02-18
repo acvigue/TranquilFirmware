@@ -2,6 +2,7 @@
 // Rob Dobson 2016-18
 
 #include "AxisValues.h"
+#include "float.h"
 
 double AxisUtils::cosineRule(double a, double b, double c)
 {
@@ -25,6 +26,12 @@ double AxisUtils::wrapDegrees( double angle )
 {
     // Log.verbose("wrapDegrees %F %F\n", angle, angle - 360 * floor( angle / 360 ));
     return angle - 360.0 * floor( angle / 360.0 );
+}
+
+float AxisUtils::wrapFloat(float x, float min, float max) {
+    if (min > max)
+        return wrapFloat(x, max, min);
+    return (x >= 0 ? min : max) + fmodf(x, max - min);
 }
 
 double AxisUtils::r2d(double angleRadians)

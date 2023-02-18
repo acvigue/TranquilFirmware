@@ -7,7 +7,7 @@
 #include "Utils.h"
 #include "math.h"
 
-//#define DEBUG_SANDTABLERotary_MOTION 1
+//#define DEBUG_SANDTABLE_MOTION 1
 //#define DEBUG_SANDTABLE_CARTESIAN_TO_POLAR 1
 
 static const char* MODULE_PREFIX = "SandTableRotary: ";
@@ -39,7 +39,7 @@ bool RobotSandTableRotary::ptToActuator(AxisFloats& targetPt, AxisFloats& outAct
     // Val0 is theta
     // Val0 is rho
     AxisFloats curPolar;
-    stepsToPolar(curAxisPositions._stepsFromHome, curPolar, axesParams);
+    actuatorToPolar(curAxisPositions._stepsFromHome, curPolar, axesParams);
     // Best relative polar solution
     AxisFloats relativePolarSolution;
 
@@ -72,7 +72,7 @@ bool RobotSandTableRotary::ptToActuator(AxisFloats& targetPt, AxisFloats& outAct
     relativePolarToSteps(relativePolarSolution, curAxisPositions, outActuator, axesParams);
 
     // Debug
-    #ifdef DEBUG_SANDTABLERotary_MOTION
+    #ifdef DEBUG_SANDTABLE_MOTION
         Log.trace("%sptToAct newX %F newY %F prevX %F prevY %F dist %F abs steps %F, %F minRot1 %F, minRot2 %F\n", MODULE_PREFIX, 
                     targetPt._pt[0], 
                     targetPt._pt[1], 
@@ -92,7 +92,7 @@ void RobotSandTableRotary::actuatorToPt(AxisInt32s& actuatorPos, AxisFloats& out
 {
     // Get current polar
     AxisFloats curPolar;
-    stepsToPolar(actuatorPos, curPolar, axesParams);
+    actuatorToPolar(actuatorPos, curPolar, axesParams);
 
 	// Calculate max linear axis
 	float maxLinear = -1;
@@ -101,44 +101,36 @@ void RobotSandTableRotary::actuatorToPt(AxisInt32s& actuatorPos, AxisFloats& out
         maxLinear = 100;
 
     // Compute axis positions from polar values
-    float rho = curPolar.getVal(1);
+    float rho = float(curPolar.getVal(1) * maxLinear);
     float theta = curPolar.getVal(0);
 
-    float x = rho * cos(theta);
-    float y = rho * sin(theta);
+    float x = rho * cos(AxisUtils::d2r(theta));
+    float y = rho * sin(AxisUtils::d2r(theta));
 
     outPt.setVal(0, x);
     outPt.setVal(1, y);    
 
     // Debug
-    Log.verbose("%sacToPt s1 %d s2 %d theta %F rho %F\n", MODULE_PREFIX, 
-                actuatorPos.getVal(0), actuatorPos.getVal(1),
-                curPolar.getVal(0), curPolar.getVal(1));
+    #ifdef DEBUG_SANDTABLE_MOTION
+    Log.trace("%sacToPt s1 %d s2 %d theta %F rho %F x %F y %F\n", MODULE_PREFIX, 
+        actuatorPos.getVal(0), actuatorPos.getVal(1),
+        theta, rho, x, y);
+    #endif
 }
 
 void RobotSandTableRotary::correctStepOverflow(AxisPosition& curPos, AxesParams& axesParams)
 {
-    // Since the robot is polar, axis 0 can be considered to have a value between 0 and the stepsPerRot
-    // Axis 1 can have a value between 0 (center) and stepsPerRot * (maxVal / unitsPerRot) (end)
-    Log.verbose("%scorrectoverflow\n", MODULE_PREFIX);
-    int32_t stepsPerRot0 = int32_t(roundf(axesParams.getStepsPerRot(0)));
-    curPos._stepsFromHome.setVal(0, (curPos._stepsFromHome.getVal(0) + stepsPerRot0) % stepsPerRot0);
-
-    AxisFloats targetPolar;
-    bool isValid = cartesianToPolar(curPos._axisPositionMM, targetPolar, axesParams);
-    if(isValid) {
-        float maxLinear = -1;
-        axesParams.getMaxVal(1, maxLinear);
-        if(maxLinear == -1)
-            maxLinear = 100;
-
-        float currentRho = targetPolar.getVal(1);
-        
-        //steps from home for rho axis will be the current rho (0 -> 1) * maxStepsRho;
-        int32_t maxStepsRho = int32_t(roundf(float(axesParams.getStepsPerRot(1) * float(maxLinear / axesParams.getunitsPerRot(1)))));
-        
-        int32_t currentRhoSteps = int32_t(roundf(float(currentRho) * float(maxStepsRho)));
-        curPos._stepsFromHome.setVal(1, currentRhoSteps);
+    int rotationStepsTheta = (int)(axesParams.getStepsPerRot(0));
+    int rotationStepsRho = (int)(axesParams.getStepsPerRot(1));
+    
+    // Bring steps from home values back within a single rotation
+    while (curPos._stepsFromHome.getVal(0) > rotationStepsTheta) {
+        curPos._stepsFromHome.setVal(0, curPos._stepsFromHome.getVal(0) - rotationStepsTheta);
+        curPos._stepsFromHome.setVal(1, curPos._stepsFromHome.getVal(1) - rotationStepsRho);
+    }
+    while (curPos._stepsFromHome.getVal(0) <= -rotationStepsTheta) {
+        curPos._stepsFromHome.setVal(0, curPos._stepsFromHome.getVal(0) + rotationStepsTheta);
+        curPos._stepsFromHome.setVal(1, curPos._stepsFromHome.getVal(1) + rotationStepsRho);
     }
 }
 
@@ -182,27 +174,6 @@ bool RobotSandTableRotary::cartesianToPolar(AxisFloats& targetPt, AxisFloats& ta
 #endif
 
     return posValid;
-}
-
-void RobotSandTableRotary::stepsToPolar(AxisInt32s& actuatorCoords, AxisFloats& rotationDegrees, AxesParams& axesParams)
-{
-    // Axis 0 positive steps clockwise, axis 1 postive steps are anticlockwise
-    // Axis 0 zero steps is at 0 degrees, axis 1 zero steps is at 0 mm
-    // All angles returned are in degrees clockwise from North
-    double currentTheta = AxisUtils::wrapDegrees(actuatorCoords.getVal(0) * 360 / axesParams.getStepsPerRot(0));
-
-    float maxLinear = -1;
-    axesParams.getMaxVal(1, maxLinear);
-    if(maxLinear == -1)
-        maxLinear = 100;
-
-    int32_t maxStepsRho = int32_t(roundf(float(axesParams.getStepsPerRot(1) * float(maxLinear / axesParams.getunitsPerRot(1)))));
-    float currentRho = float(actuatorCoords.getVal(1) / float(maxStepsRho));
-    rotationDegrees.set(currentTheta, currentRho);
-    #ifdef DEBUG_SANDTABLE_CARTESIAN_TO_POLAR
-        Log.trace("%sstepsToPolar: ax0Steps %d ax1Steps %d a %Fd b %Fd\n", MODULE_PREFIX,
-                actuatorCoords.getVal(0), actuatorCoords.getVal(1), rotationDegrees._pt[0], rotationDegrees._pt[1]);
-    #endif
 }
 
 float RobotSandTableRotary::calcRelativePolar(float targetRotation, float curRotation)
@@ -252,6 +223,7 @@ void RobotSandTableRotary::relativePolarToSteps(AxisFloats& relativePolar, AxisP
     // Add to existing
     outActuator.setVal(0, curAxisPositions._stepsFromHome.getVal(0) + stepsRelTheta);
     outActuator.setVal(1, curAxisPositions._stepsFromHome.getVal(1) + stepsRelRho);
+
     #ifdef DEBUG_SANDTABLE_CARTESIAN_TO_POLAR
         Log.trace("%srelativePolarToSteps: stepsRel0 %d stepsRel1 %d curSteps0 %d curSteps1 %d destSteps0 %F destSteps1 %F inTheta %F inRho %F\n",
                 MODULE_PREFIX,
@@ -259,6 +231,30 @@ void RobotSandTableRotary::relativePolarToSteps(AxisFloats& relativePolar, AxisP
                 outActuator.getVal(0), outActuator.getVal(1), relativePolar.getVal(0), relativePolar.getVal(1));
     #endif
 }
+
+void RobotSandTableRotary::actuatorToPolar(AxisInt32s& actuatorCoords, AxisFloats& polarCoords, AxesParams& axesParams)
+    {
+        // Calculate azimuth
+        double currentTheta = AxisUtils::wrapDegrees(actuatorCoords.getVal(0) * 360 / axesParams.getStepsPerRot(0));
+        polarCoords.setVal(0, currentTheta);
+
+        float maxLinear = -1;
+        axesParams.getMaxVal(1, maxLinear);
+        if(maxLinear == -1)
+            maxLinear = 100;
+
+        // Calculate linear position (note that this robot has interaction between azimuth and linear motion as the rack moves
+        // if the pinion gear remains still and the arm assembly moves around it) - so the required linear calculation uses the
+        // difference in linear and arm rotation steps
+        long linearStepsFromHome = actuatorCoords.getVal(1) - (float(actuatorCoords.getVal(0)) * float(float(axesParams.getStepsPerRot(1))/float(axesParams.getStepsPerRot(0))));
+        int32_t maxStepsRho = int32_t(roundf(float(axesParams.getStepsPerRot(1) * float(maxLinear / axesParams.getunitsPerRot(1)))));
+
+        float currentRho = float(linearStepsFromHome) / float(maxStepsRho);
+        polarCoords.setVal(1, currentRho);
+
+        // Log.trace("actuatorToPolar c0 %F c1 %F alphaSteps %d alphaDegs %F linStpHm %d rotD %F lin %F\n", actuatorCoords[0], actuatorCoords[1],
+        //     alphaSteps, alphaDegs, linearStepsFromHome, polarCoordsAzFirst[0] * 180 / M_PI, polarCoordsAzFirst[1]);
+    }
 
 void RobotSandTableRotary::convertCoords(RobotCommandArgs& cmdArgs, AxesParams& axesParams)
 {
