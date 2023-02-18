@@ -48,9 +48,12 @@ private:
     bool _autoDim = false;
 
     int _effectID;
-    int _redVal;
-    int _greenVal;
-    int _blueVal;
+    int _primaryRedVal;
+    int _primaryGreenVal;
+    int _primaryBlueVal;
+    int _secRedVal;
+    int _secGreenVal;
+    int _secBlueVal;
     int _luxLevel;
     CRGB *_leds;
     Adafruit_TSL2561_Unified *_tsl;

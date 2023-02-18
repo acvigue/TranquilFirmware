@@ -99,9 +99,12 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
         _ledRealBrightness = 0;
         _effectSpeed = 50;
         _autoDim = false;
-        _redVal = 0xcc;
-        _greenVal = 0xcc;
-        _blueVal = 0xcc;
+        _primaryRedVal = 0xcc;
+        _primaryGreenVal = 0xcc;
+        _primaryBlueVal = 0xcc;
+        _secRedVal = 0xcc;
+        _secGreenVal = 0xcc;
+        _secBlueVal = 0xcc;
         _effectID = 0;
         updateNv();
     } else {
@@ -111,12 +114,14 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
         _autoDim = _ledNvValues.getLong("autoDim", 0) == 1;
         _effectSpeed = _ledNvValues.getLong("effectSpeed", 0);
         _effectID = _ledNvValues.getLong("effectID", 0);
-        _redVal = _ledNvValues.getLong("redVal", 127);
-        _greenVal = _ledNvValues.getLong("greenVal", 127);
-        _blueVal = _ledNvValues.getLong("blueVal", 127);
+        _primaryRedVal = _ledNvValues.getLong("primaryRedVal", 127);
+        _primaryGreenVal = _ledNvValues.getLong("primaryGreenVal", 127);
+        _primaryBlueVal = _ledNvValues.getLong("primaryBlueVal", 127);
+        _secRedVal = _ledNvValues.getLong("secRedVal", 127);
+        _secGreenVal = _ledNvValues.getLong("secGreenVal", 127);
+        _secBlueVal = _ledNvValues.getLong("secBlueVal", 127);
 
-        Log.trace("%sLED Setup from JSON: %s On: %d, Brightness: %d, Auto Dim: %d, Effect: %d, Color R: %d, G: %d, B: %d\n", MODULE_PREFIX, 
-                    ledStripConfigStr.c_str(), _ledOn, _ledBrightness, _autoDim, _effectID, _redVal, _greenVal, _blueVal);
+        Log.trace("%sLED Setup from JSON\n", MODULE_PREFIX);
     }
 
     _leds = new CRGB[_ledCount];
@@ -164,22 +169,42 @@ void LedStrip::updateLedFromConfig(const char * pLedJson) {
         _effectSpeed = effectSpeed;
         changed = true;
     }
-    int redVal = RdJson::getLong("redVal", 0, pLedJson);
-    if (redVal != _redVal) {
+
+    int primaryRedVal = RdJson::getLong("primaryRedVal", 0, pLedJson);
+    if (primaryRedVal != _primaryRedVal) {
         
-        _redVal = redVal;
+        _primaryRedVal = primaryRedVal;
         changed = true;
     }
-    int greenVal = RdJson::getLong("greenVal", 0, pLedJson);
-    if (greenVal != _greenVal) {
+    int primaryGreenVal = RdJson::getLong("primaryGreenVal", 0, pLedJson);
+    if (primaryGreenVal != _primaryGreenVal) {
         
-        _greenVal = greenVal;
+        _primaryGreenVal = primaryGreenVal;
         changed = true;
     }
-    int blueVal = RdJson::getLong("blueVal", 0, pLedJson);
-    if (blueVal != _blueVal) {
+    int primaryBlueVal = RdJson::getLong("primaryBlueVal", 0, pLedJson);
+    if (primaryBlueVal != _primaryBlueVal) {
         
-        _blueVal = blueVal;
+        _primaryBlueVal = primaryBlueVal;
+        changed = true;
+    }
+
+    int secRedVal = RdJson::getLong("secRedVal", 0, pLedJson);
+    if (secRedVal != _secRedVal) {
+        
+        _secRedVal = secRedVal;
+        changed = true;
+    }
+    int secGreenVal = RdJson::getLong("secGreenVal", 0, pLedJson);
+    if (secGreenVal != _secGreenVal) {
+        
+        _secGreenVal = secGreenVal;
+        changed = true;
+    }
+    int secBlueVal = RdJson::getLong("secBlueVal", 0, pLedJson);
+    if (secBlueVal != _secBlueVal) {
+        
+        _secBlueVal = secBlueVal;
         changed = true;
     }
 
@@ -309,14 +334,23 @@ void LedStrip::updateNv()
     jsonStr += "\"effectID\":";
     jsonStr += _effectID;
     jsonStr += ",";
-    jsonStr += "\"redVal\":";
-    jsonStr += _redVal;
+    jsonStr += "\"primaryRedVal\":";
+    jsonStr += _primaryRedVal;
     jsonStr += ",";
-    jsonStr += "\"greenVal\":";
-    jsonStr += _greenVal;
+    jsonStr += "\"primaryGreenVal\":";
+    jsonStr += _primaryGreenVal;
     jsonStr += ",";
-    jsonStr += "\"blueVal\":";
-    jsonStr += _blueVal;
+    jsonStr += "\"primaryBlueVal\":";
+    jsonStr += _primaryBlueVal;
+    jsonStr += ",";
+    jsonStr += "\"secRedVal\":";
+    jsonStr += _secRedVal;
+    jsonStr += ",";
+    jsonStr += "\"secGreenVal\":";
+    jsonStr += _secGreenVal;
+    jsonStr += ",";
+    jsonStr += "\"secBlueVal\":";
+    jsonStr += _secBlueVal;
     jsonStr += ",";
     jsonStr += "\"autoDim\":";
     jsonStr += _autoDim ? "1" : "0";
@@ -346,7 +380,7 @@ void LedStrip::setSleepMode(int sleep)
 void LedStrip::solid_color() 
 {
   for( uint16_t i = 0 ; i < _ledCount; i++) {
-    CRGB newcolor = CRGB(_redVal, _greenVal, _blueVal);
+    CRGB newcolor = CRGB(_primaryRedVal, _primaryGreenVal, _primaryBlueVal);
     _leds[i] = newcolor;
   }
 }
