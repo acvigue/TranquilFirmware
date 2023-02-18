@@ -1,3 +1,5 @@
+.vscode
+
 # Python intermediates
 *.pyc
 .DS_Store
