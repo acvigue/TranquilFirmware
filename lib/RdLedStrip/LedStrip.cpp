@@ -353,7 +353,7 @@ void LedStrip::updateNv()
     jsonStr += _secBlueVal;
     jsonStr += ",";
     jsonStr += "\"autoDim\":";
-    jsonStr += _autoDim ? "1" : "0";
+    jsonStr += _sensorEnabled == 1 ? (_autoDim ? "1" : "0") : "-1";
     jsonStr += "}";
     _ledNvValues.setConfigData(jsonStr.c_str());
     _ledNvValues.writeConfig();

@@ -101,7 +101,6 @@ void TrinamicsController::configure(const char *configJSON)
             driver_1.rms_current(_irun);        // Set motor RMS current
             driver_1.microsteps(_msteps);          // Set microsteps to 1/16th
             driver_1.intpol(true);
-            //driver_1.pwm_autoscale(true);
 
             if(_stealthChop == 1) {
                 driver_1.pwm_autoscale(true);
@@ -115,14 +114,13 @@ void TrinamicsController::configure(const char *configJSON)
             driver_2.rms_current(_irun);        // Set motor RMS current
             driver_2.microsteps(_msteps);          // Set microsteps to 1/16th
             driver_2.intpol(true);
+
             if(_stealthChop == 1) {
                 driver_2.pwm_autoscale(true);
                 driver_2.en_spreadCycle(false);
             } else {
                 driver_2.en_spreadCycle(true);
             }
-
-            Log.trace("%s trinamics: RMS %i, %i msteps, %i toff\n", MODULE_PREFIX, _irun, _msteps, _toff);
         }
 
         // Configure TMC2130s
@@ -137,13 +135,12 @@ void TrinamicsController::configure(const char *configJSON)
             serial2.begin(115200, SERIAL_8N1, 34, _tx2);
             driver_1.reset();
             driver_2.reset();
-
+            
             driver_1.begin();
             driver_1.toff(_toff);                 // Enables driver in software
             driver_1.rms_current(_irun);        // Set motor RMS current
             driver_1.microsteps(_msteps);          // Set microsteps to 1/16th
             driver_1.intpol(true);
-            //driver_1.pwm_autoscale(true);
 
             if(_stealthChop == 1) {
                 driver_1.pwm_autoscale(true);
@@ -157,14 +154,13 @@ void TrinamicsController::configure(const char *configJSON)
             driver_2.rms_current(_irun);        // Set motor RMS current
             driver_2.microsteps(_msteps);          // Set microsteps to 1/16th
             driver_2.intpol(true);
+
             if(_stealthChop == 1) {
                 driver_2.pwm_autoscale(true);
                 driver_2.en_spreadCycle(false);
             } else {
                 driver_2.en_spreadCycle(true);
             }
-
-            Log.trace("%s trinamics: RMS %i, %i msteps, %i toff\n", MODULE_PREFIX, _irun, _msteps, _toff);
         }
     }
 }
