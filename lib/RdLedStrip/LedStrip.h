@@ -17,7 +17,7 @@ class LedStrip
 public:
     LedStrip(ConfigBase &ledNvValues);
     void setup(ConfigBase* pConfig, const char* ledStripName);
-    void service();
+    void service(float currentX, float currentY);
     void serviceStrip();
     void updateLedFromConfig(const char* pLedJson);
     const char* getConfigStrPtr();
@@ -29,6 +29,7 @@ private:
     void updateNv();
     uint16_t getAverageSensorReading();
     void effect_pride();
+    void effect_followTheta();
     void solid_color();
 
 private:
@@ -55,6 +56,9 @@ private:
     int _secGreenVal;
     int _secBlueVal;
     int _luxLevel;
+
+    float _currentX = 0;
+    float _currentY = 0;
     CRGB *_leds;
     Adafruit_TSL2561_Unified *_tsl;
     bool ledConfigChanged = false;

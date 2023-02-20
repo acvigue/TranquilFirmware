@@ -401,7 +401,9 @@ void loop()
 
     // Service the LED strip
     debugLoopTimer.blockStart(14);
-    ledStrip.service();
+    RobotCommandArgs args;
+    _robotController.getCurStatus(args);
+    ledStrip.service(args.getPointMM().getVal(0), args.getPointMM().getVal(1));
     debugLoopTimer.blockEnd(14);
 }
 

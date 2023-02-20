@@ -223,7 +223,7 @@ int LedStrip::getLuxLevel() {
     return 0;
 }
 
-void LedStrip::service()
+void LedStrip::service(float currentX, float currentY)
 {
     // Check if active
     if (!_isSetup)
@@ -264,6 +264,9 @@ void LedStrip::service()
 
             _last_check_tsl_time = millis();
         }
+
+        _currentX = currentX;
+        _currentY = currentY;
     }
 
     if (ledConfigChanged) {
@@ -305,6 +308,7 @@ void LedStrip::serviceStrip() {
     switch(_effectID) {
         case 0: solid_color(); break;
         case 1: effect_pride(); break;
+        case 2: effect_followTheta(); break;
         default: break;
     }
 
@@ -424,4 +428,32 @@ void LedStrip::effect_pride()
     
     nblend( _leds[pixelnumber], newcolor, 64);
   }
+}
+
+void LedStrip::effect_followTheta() 
+{
+    int trail = 7;
+    Log.trace("%sx: %F, y: %F\n", MODULE_PREFIX, _currentX, _currentY);
+    // Calculate theta. Will always be POSITIVE (0 -> 2PI)
+    float theta = atan2(_currentY, _currentX);
+    if (theta < 0)
+        theta += M_PI * 2;
+    
+    Log.trace("%stheta: %F\n", MODULE_PREFIX, theta);
+    float rot = theta/float(2 * M_PI);
+    int headLED = int(roundf(float(rot * float(_ledCount))));
+
+    int startLED = (headLED - trail);
+    if(startLED < 0)
+        startLED = startLED + _ledCount;
+
+    int endLED = (headLED + trail);
+    if(endLED > _ledCount)
+        endLED = endLED - _ledCount;
+
+    Log.trace("%s startLED: %d, headLED: %d, endLED: %d\n", MODULE_PREFIX, startLED, headLED, endLED);
+
+    fill_solid(_leds, _ledCount, CRGB(_primaryRedVal, _primaryGreenVal, _primaryBlueVal));
+    fill_gradient_RGB(_leds, startLED, CRGB(_primaryRedVal,_primaryGreenVal,_primaryRedVal), (headLED == 0 ? (_ledCount - 1) : headLED, CRGB(_secRedVal,_secGreenVal,_secRedVal));
+    fill_gradient_RGB(_leds, (headLED == 0 ? (_ledCount - 1) : headLED,CRGB(_secRedVal,_secGreenVal,_secRedVal) , endLED, CRGB(_primaryRedVal,_primaryGreenVal,_primaryRedVal));
 }
