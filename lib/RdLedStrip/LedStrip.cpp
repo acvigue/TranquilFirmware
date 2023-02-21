@@ -454,6 +454,6 @@ void LedStrip::effect_followTheta()
     Log.trace("%s startLED: %d, headLED: %d, endLED: %d\n", MODULE_PREFIX, startLED, headLED, endLED);
 
     fill_solid(_leds, _ledCount, CRGB(_primaryRedVal, _primaryGreenVal, _primaryBlueVal));
-    fill_gradient_RGB(_leds, startLED, CRGB(_primaryRedVal,_primaryGreenVal,_primaryRedVal), (headLED == 0 ? (_ledCount - 1) : headLED, CRGB(_secRedVal,_secGreenVal,_secRedVal));
-    fill_gradient_RGB(_leds, (headLED == 0 ? (_ledCount - 1) : headLED,CRGB(_secRedVal,_secGreenVal,_secRedVal) , endLED, CRGB(_primaryRedVal,_primaryGreenVal,_primaryRedVal));
+    fill_gradient_RGB(_leds, startLED, CRGB(_primaryRedVal,_primaryGreenVal,_primaryRedVal), headLED, CRGB(_secRedVal,_secGreenVal,_secRedVal));
+    fill_gradient_RGB(_leds, headLED,CRGB(_secRedVal,_secGreenVal,_secRedVal) , endLED, CRGB(_primaryRedVal,_primaryGreenVal,_primaryRedVal));
 }
