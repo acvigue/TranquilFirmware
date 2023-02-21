@@ -432,28 +432,37 @@ void LedStrip::effect_pride()
 
 void LedStrip::effect_followTheta() 
 {
-    int trail = 7;
+    int trail = 5;
+    CRGB grad[(trail * 2) + 1];
     Log.trace("%sx: %F, y: %F\n", MODULE_PREFIX, _currentX, _currentY);
     // Calculate theta. Will always be POSITIVE (0 -> 2PI)
     float theta = atan2(_currentY, _currentX);
     if (theta < 0)
         theta += M_PI * 2;
+
+    float distFromOrigin = sqrt(pow(_currentX, 2) + pow(_currentY, 2));
+    float maxLinear = 145.5;
+    int blendStrength = max(int(float(255) * (distFromOrigin / maxLinear)), 255);
+
+    CRGB pColor = CRGB(_primaryRedVal, _primaryBlueVal, _primaryGreenVal);
+    CRGB sColor = CRGB(_primaryRedVal, _primaryBlueVal, _primaryGreenVal);
+
+    CRGB headColor = blend( pColor, sColor, blendStrength);
+    fill_gradient_RGB(grad, 0, pColor, trail, headColor);
+    grad[trail + 1] = headColor;
+    fill_gradient_RGB(grad, trail + 2, pColor, (trail * 2) + 1, headColor);
     
     Log.trace("%stheta: %F\n", MODULE_PREFIX, theta);
     float rot = theta/float(2 * M_PI);
     int headLED = int(roundf(float(rot * float(_ledCount))));
 
-    int startLED = (headLED - trail);
-    if(startLED < 0)
-        startLED = startLED + _ledCount;
+    int startLED = (headLED - trail) % _ledCount;
 
-    int endLED = (headLED + trail);
-    if(endLED > _ledCount)
-        endLED = endLED - _ledCount;
-
-    Log.trace("%s startLED: %d, headLED: %d, endLED: %d\n", MODULE_PREFIX, startLED, headLED, endLED);
-
-    fill_solid(_leds, _ledCount, CRGB(_primaryRedVal, _primaryGreenVal, _primaryBlueVal));
-    fill_gradient_RGB(_leds, startLED, CRGB(_primaryRedVal,_primaryGreenVal,_primaryRedVal), headLED, CRGB(_secRedVal,_secGreenVal,_secRedVal));
-    fill_gradient_RGB(_leds, headLED,CRGB(_secRedVal,_secGreenVal,_secRedVal) , endLED, CRGB(_primaryRedVal,_primaryGreenVal,_primaryRedVal));
+    for(int i = 0; i < _ledCount; i++) {
+        _leds[i] = pColor;
+    }
+    
+    for(int i = 0; i < sizeof(grad); i++) {
+        _leds[(startLED + i) % _ledCount] = grad[i];
+    }
 }
