@@ -127,6 +127,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
     _leds = new CRGB[_ledCount];
     FastLED.addLeds<NEOPIXEL, LED_PIN>(_leds,_ledCount);
     FastLED.setMaxPowerInVoltsAndMilliamps(5,1000);
+    FastLED.setCorrection(TypicalLEDStrip);
     FastLED.setBrightness(_ledBrightness);
     FastLED.show();
     FastLED.clear(true);
@@ -443,8 +444,8 @@ void LedStrip::effect_followTheta()
     float maxLinear = 145.5;
     int blendStrength = min(int(float(255) * (distFromOrigin / maxLinear)), 255);
 
-    CRGB pColor = CRGB(_primaryRedVal, _primaryBlueVal, _primaryGreenVal);
-    CRGB sColor = CRGB(_secRedVal, _secBlueVal, _secGreenVal);
+    CRGB pColor = CRGB(_primaryRedVal, _primaryGreenVal, _primaryBlueVal);
+    CRGB sColor = CRGB(_secRedVal, _secGreenVal, _secBlueVal);
 
     CRGB headColor = blend( pColor, sColor, blendStrength);
     fill_gradient_RGB(grad, 0, pColor, trail, headColor);
