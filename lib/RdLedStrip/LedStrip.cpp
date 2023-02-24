@@ -221,7 +221,7 @@ int LedStrip::getLuxLevel() {
     if(_sensorEnabled == 1) {
         return _luxLevel;
     }
-    return 0;
+    return -1;
 }
 
 void LedStrip::service(float currentX, float currentY)
@@ -454,7 +454,7 @@ void LedStrip::effect_followTheta()
     float rot = theta/float(2 * M_PI);
     int headLED = int(roundf(float(rot * float(_ledCount))));
 
-    int startLED = (headLED - trail);
+    int startLED = (headLED - trail) - 2;
 
     for(int i = 0; i < _ledCount; i++) {
         _leds[i] = pColor;
