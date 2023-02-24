@@ -85,7 +85,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
         } else {
             Log.info("%sTSL2561 detected!\n", MODULE_PREFIX);
             _tsl->enableAutoRange(true);            /* Auto-gain ... switches automatically between 1x and 16x */
-            _tsl->setIntegrationTime(TSL2561_INTEGRATIONTIME_13MS);      /* fast but low resolution */   
+            _tsl->setIntegrationTime(TSL2561_INTEGRATIONTIME_101MS);      /* fast but low resolution */   
         }
     }
 
