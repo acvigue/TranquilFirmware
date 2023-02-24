@@ -9,8 +9,7 @@
 #include <FastLED.h>
 
 #include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_TSL2561_U.h>
+#include <SparkFunTSL2561.h>
 
 class LedStrip
 {
@@ -21,13 +20,12 @@ public:
     void serviceStrip();
     void updateLedFromConfig(const char* pLedJson);
     const char* getConfigStrPtr();
-    int getLuxLevel();
+    float getLuxLevel();
     void setSleepMode(int sleep);
 
 private:
     void configChanged();
     void updateNv();
-    uint16_t getAverageSensorReading();
     void effect_pride();
     void effect_followTheta();
     void solid_color();
@@ -35,12 +33,14 @@ private:
 private:
     String _name;
     ConfigBase* _pHwConfig;
-    static const int NUM_SENSOR_VALUES = 100;
+
     bool _isSetup;
     bool _isSleeping;
     int _ledPin;
     int _ledCount;
     int _sensorEnabled;
+    bool _currentGain = 0;
+    unsigned int _currentIntegrationMS = 402;
 
     bool _ledOn;
     byte _ledBrightness = -1;
@@ -55,20 +55,16 @@ private:
     int _secRedVal;
     int _secGreenVal;
     int _secBlueVal;
-    int _luxLevel;
+    double _luxLevel;
 
     float _currentX = 0;
     float _currentY = 0;
     CRGB *_leds;
-    Adafruit_TSL2561_Unified *_tsl;
+    SFE_TSL2561 *_tsl;
     bool ledConfigChanged = false;
-    unsigned long _last_check_tsl_time = 0;
-    
-    int sensorReadingCount = 0;
+    unsigned long integration_start_ms = 0;
+    bool _isCurrentlyIntegrating = false;
 
     // Store the settings for LED in NV Storage
     ConfigBase& _ledNvValues;
-
-    // Store a number of sensor readings for smoother transitions
-    uint16_t sensorValues[NUM_SENSOR_VALUES];
 };

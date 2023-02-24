@@ -9,8 +9,7 @@
 #include "ConfigNVS.h"
 #include <FastLED.h>
 #include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_TSL2561_U.h>
+#include <SparkFunTSL2561.h>
 
 #define FASTLED_ESP32_I2S true
 #define LED_PIN 4
@@ -74,7 +73,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
     // Setup the sensor
     _sensorEnabled = sensorEnabled;
     if (_sensorEnabled == 1) {
-        _tsl = new Adafruit_TSL2561_Unified(TSL2561_ADDR_FLOAT, 12345);
+        _tsl = new SFE_TSL2561();
 
         Wire.begin(sensorSDA, sensorSCL);
         if(!_tsl->begin())
@@ -84,8 +83,10 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName)
             _sensorEnabled = 0;
         } else {
             Log.info("%sTSL2561 detected!\n", MODULE_PREFIX);
-            _tsl->enableAutoRange(true);            /* Auto-gain ... switches automatically between 1x and 16x */
-            _tsl->setIntegrationTime(TSL2561_INTEGRATIONTIME_101MS);      /* fast but low resolution */   
+            unsigned char time = 3;
+            _tsl->setTiming(_currentGain, time, _currentIntegrationMS);
+            _tsl->setPowerUp();
+            _currentIntegrationMS = 402;
         }
     }
 
@@ -217,7 +218,7 @@ const char* LedStrip::getConfigStrPtr() {
     return _ledNvValues.getConfigCStrPtr();
 }
 
-int LedStrip::getLuxLevel() {
+float LedStrip::getLuxLevel() {
     if(_sensorEnabled == 1) {
         return _luxLevel;
     }
@@ -235,21 +236,54 @@ void LedStrip::service(float currentX, float currentY)
     {
         // TODO Auto Dim isn't working as expected - this should never go enabled right now
         // Check if we need to read and evaluate the light sensor
-        if (_sensorEnabled == 1 && (millis() - _last_check_tsl_time > 3000)) {
+        if (_sensorEnabled == 1) {
+            //Handle starting and stopping integration!
+            if(!_isCurrentlyIntegrating) {
+                _tsl->manualStart();
+                integration_start_ms = millis();
+                _isCurrentlyIntegrating = true;
+            } else {
+                if(millis() - integration_start_ms > _currentIntegrationMS) {
+                    _tsl->manualStop();
+                    _isCurrentlyIntegrating = false;
 
-            sensors_event_t event;
-            _tsl->getEvent(&event);
-            _luxLevel = event.light;
+                    unsigned int data0, data1;
+  
+                    if (_tsl->getData(data0,data1)) {
+                        double lux;    // Resulting lux value
+                        boolean good;  // True if neither sensor is saturated
+                        
+                        // Perform lux calculation:
+
+                        good = _tsl->getLux(_currentGain,_currentIntegrationMS,data0,data1,_luxLevel);
+
+                        if(_luxLevel < 0.1) {
+                            //We're in low light, double int time...
+                            _currentIntegrationMS = _currentIntegrationMS * 2;
+                            if(_currentIntegrationMS > 3000) {
+                                _currentIntegrationMS = 3000;
+                            }
+                        }
+
+                        if(_luxLevel > 5) {
+                            //Not really a low light level, reset integration time
+                            _currentIntegrationMS = 10;
+                        }
+                    } else {
+                        Log.error("%sCouldn't get data from TSL2561!\n", MODULE_PREFIX);
+                    }
+                }
+            }
 
             if(_autoDim) {
                 byte ledBrightness;
-                if(_luxLevel > 25) {
+                if(_luxLevel > 3) {
                     //high brightness
                     ledBrightness = 100;
-                } else if(_luxLevel > 10) {
+                } else if(_luxLevel > 0.5) {
                     //low brightness
                     ledBrightness = 50;
-                } else if(_luxLevel > 1) {
+                } else if(_luxLevel > 0.02) {
                     //low brightness
                     ledBrightness = 5;
                 } else {
@@ -261,8 +295,6 @@ void LedStrip::service(float currentX, float currentY)
                     ledConfigChanged = true;
                 }
             }
-
-            _last_check_tsl_time = millis();
         }
 
         _currentX = currentX;
@@ -362,15 +394,6 @@ void LedStrip::updateNv()
     _ledNvValues.setConfigData(jsonStr.c_str());
     _ledNvValues.writeConfig();
     Log.trace("%supdateNv() : wrote %s\n", MODULE_PREFIX, _ledNvValues.getConfigCStrPtr());
-}
-
-// Get the average sensor reading
-uint16_t LedStrip::getAverageSensorReading() {
-    uint16_t sum = 0;
-    for (int i = 0; i < NUM_SENSOR_VALUES; i++) {
-        sum += sensorValues[i];
-    }
-    return sum / NUM_SENSOR_VALUES;
 }
 
 // Set sleep mode
