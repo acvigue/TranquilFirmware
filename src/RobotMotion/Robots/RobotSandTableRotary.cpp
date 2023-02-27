@@ -122,7 +122,13 @@ void RobotSandTableRotary::correctStepOverflow(AxisPosition& curPos, AxesParams&
 {
     int rotationStepsTheta = (int)(axesParams.getStepsPerRot(0));
     int rotationStepsRho = (int)(axesParams.getStepsPerRot(1));
-    
+    bool showDebug = false;
+        if (curPos._stepsFromHome.getVal(0) > rotationStepsTheta || curPos._stepsFromHome.getVal(0) <= -rotationStepsTheta)
+        {
+            Log.info("CORRECTING ax0 %d ax1 %d\n",
+                            curPos._stepsFromHome.getVal(0), curPos._stepsFromHome.getVal(1));
+            showDebug = true;
+        }
     // Bring steps from home values back within a single rotation
     while (curPos._stepsFromHome.getVal(0) > rotationStepsTheta) {
         curPos._stepsFromHome.setVal(0, curPos._stepsFromHome.getVal(0) - rotationStepsTheta);
@@ -132,6 +138,9 @@ void RobotSandTableRotary::correctStepOverflow(AxisPosition& curPos, AxesParams&
         curPos._stepsFromHome.setVal(0, curPos._stepsFromHome.getVal(0) + rotationStepsTheta);
         curPos._stepsFromHome.setVal(1, curPos._stepsFromHome.getVal(1) + rotationStepsRho);
     }
+    
+    if (showDebug)
+        Log.info("CORRECTED ax0 %d ax1 %d\n", curPos._stepsFromHome.getVal(0), curPos._stepsFromHome.getVal(1));
 }
 
 bool RobotSandTableRotary::cartesianToPolar(AxisFloats& targetPt, AxisFloats& targetSoln1, AxesParams& axesParams)
@@ -216,7 +225,7 @@ void RobotSandTableRotary::relativePolarToSteps(AxisFloats& relativePolar, AxisP
     //which, mm -> steps is (mm / mm/rot) * stepsPerRot
     
     float rhoMM = relativePolar.getVal(1) * maxLinear;
-    float rhoActiveSteps = (rhoMM / axesParams.getunitsPerRot(1)) * axesParams.getStepsPerRot(1);
+    float rhoActiveSteps = rhoMM * axesParams.getStepsPerUnit(1);
 
     int32_t stepsRelRho = int32_t(roundf(rhoCounteractSteps + rhoActiveSteps));
 
@@ -246,9 +255,8 @@ void RobotSandTableRotary::actuatorToPolar(AxisInt32s& actuatorCoords, AxisFloat
         // Calculate linear position (note that this robot has interaction between azimuth and linear motion as the rack moves
         // if the pinion gear remains still and the arm assembly moves around it) - so the required linear calculation uses the
         // difference in linear and arm rotation steps
-        long linearStepsFromHome = actuatorCoords.getVal(1) - (float(actuatorCoords.getVal(0)) * float(float(axesParams.getStepsPerRot(1))/float(axesParams.getStepsPerRot(0))));
-        int32_t maxStepsRho = int32_t(roundf(float(axesParams.getStepsPerRot(1) * float(maxLinear / axesParams.getunitsPerRot(1)))));
-
+        long linearStepsFromHome = actuatorCoords.getVal(1) - (float(actuatorCoords.getVal(0)) * float(axesParams.getStepsPerRot(1)/axesParams.getStepsPerRot(0)));
+        int32_t maxStepsRho = maxLinear * axesParams.getStepsPerUnit(1);
         float currentRho = float(linearStepsFromHome) / float(maxStepsRho);
         polarCoords.setVal(1, currentRho);
 
