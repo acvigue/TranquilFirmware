@@ -138,8 +138,6 @@ void MotionHelper::pause(bool pauseIt)
     _rampGenerator.pause(pauseIt);
     _trinamicsController.pause(pauseIt);
     _isPaused = pauseIt;
-
-    _motorEnabler.enableMotors(!pauseIt, false);
 }
 
 // Check if paused
