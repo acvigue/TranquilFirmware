@@ -152,7 +152,7 @@ bool RobotSandTableRotary::cartesianToPolar(AxisFloats& targetPt, AxisFloats& ta
 
 	bool axis1MaxValid = axesParams.getMaxVal(1, linearLength);
 
-    // If not valid set to some values to avoid arithmetic errors
+    //  If not valid set to some values to avoid arithmetic errors
 
 	if (!axis1MaxValid)
 		linearLength = 100;
