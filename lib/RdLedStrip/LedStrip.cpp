@@ -279,13 +279,13 @@ void LedStrip::service(float currentX, float currentY)
                 byte ledBrightness;
                 if(_luxLevel > 3) {
                     //high brightness
-                    ledBrightness = 100;
+                    ledBrightness = 255;
                 } else if(_luxLevel > 0.5) {
                     //low brightness
-                    ledBrightness = 50;
+                    ledBrightness = 600;
                 } else if(_luxLevel > 0.02) {
                     //low brightness
-                    ledBrightness = 5;
+                    ledBrightness = 10;
                 } else {
                     ledBrightness = 0;
                 }
