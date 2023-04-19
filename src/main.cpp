@@ -204,7 +204,7 @@ TaskHandle_t ledTask;
 void ledTaskFunc(void * parameter) {
     for(;;) {
         ledStrip.serviceStrip();
-        delay(40);
+        delay(16);
     }
 }
 
@@ -309,7 +309,7 @@ void setup()
       &ledTask,  /* Task handle. */
       0); /* Core where the task should run */
 
-    ArduinoOTA.setHostname("sandy");
+    ArduinoOTA.setHostname("sandytable");
     ArduinoOTA.setMdnsEnabled(true);
 
     ArduinoOTA.begin();

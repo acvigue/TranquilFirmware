@@ -7,6 +7,7 @@
 #include "ConfigNVS.h"
 #include "ConfigPinMap.h"
 #include <FastLED.h>
+#include "FastLED_RGBW.h"
 
 #include <Wire.h>
 #include <SparkFunTSL2561.h>
@@ -52,14 +53,18 @@ private:
     int _primaryRedVal;
     int _primaryGreenVal;
     int _primaryBlueVal;
+    int _primaryWhiteVal;
     int _secRedVal;
     int _secGreenVal;
     int _secBlueVal;
+    int _secWhiteVal;
     double _luxLevel;
 
     float _currentX = 0;
     float _currentY = 0;
-    CRGB *_leds;
+    CRGBW *_leds;
+    CRGB *_ledsRGB;
+    CRGB *_ledsRGBTemp;
     SFE_TSL2561 *_tsl;
     bool ledConfigChanged = false;
     unsigned long integration_start_ms = 0;
@@ -67,4 +72,6 @@ private:
 
     // Store the settings for LED in NV Storage
     ConfigBase& _ledNvValues;
+    CRGBW getRGBWFromRGB(CRGB color);
+    void convertTempRGBToRGBW();
 };
