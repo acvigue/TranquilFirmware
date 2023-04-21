@@ -29,6 +29,7 @@ private:
     static StatusIndicator* _pStatusLed;
     // Reset
     bool _deviceRestartPending;
+    bool _otaSetup;
     unsigned long _deviceRestartMs;
     static const int DEVICE_RESTART_DELAY_MS = 1000;
 

@@ -20,6 +20,7 @@ class LedStrip {
     void serviceStrip();
     void updateLedFromConfig(const char* pLedJson);
     const char* getConfigStrPtr();
+    String getCurrentConfigStr();
     float getLuxLevel();
     void setSleepMode(int sleep);
 
