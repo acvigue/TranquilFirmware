@@ -96,8 +96,6 @@ MQTTManager mqttManager(wifiManager, restAPIEndpoints);
 #include <RdOTAUpdate.h>
 RdOTAUpdate otaUpdate;
 
-#define NO_OTA_PORT
-#include <ArduinoOTA.h>
 
 // Hardware config
 static const char *hwConfigJSON = {
@@ -257,9 +255,8 @@ void setup()
 
     // Web server
     webServer.setup(hwConfig);
-    //webServer.addStaticResources(__webAutogenResources, __webAutogenResourcesCount);
     webServer.addEndpoints(restAPIEndpoints);
-    webServer.serveStaticFiles("/", "/spiffs/", "public");
+    webServer.serveStaticFiles("/", "/spiffs/", "public, max-age=86400");
     webServer.serveStaticFiles("/files/sd", "/sd/");
     webServer.enableAsyncEvents("/events");
 
@@ -308,11 +305,6 @@ void setup()
       1,  /* Priority of the task */
       &ledTask,  /* Task handle. */
       0); /* Core where the task should run */
-
-    ArduinoOTA.setHostname("sandytable");
-    ArduinoOTA.setMdnsEnabled(true);
-
-    ArduinoOTA.begin();
 }
 
 // Loop
@@ -355,7 +347,7 @@ void loop()
 
     // Service OTA Update
     debugLoopTimer.blockStart(6);
-    ArduinoOTA.handle();
+    //TODO
     debugLoopTimer.blockEnd(6);
 
     // Service NetLog
@@ -365,7 +357,7 @@ void loop()
 
     // Service NTP
     debugLoopTimer.blockStart(8);
-    //ntpClient.service();
+    ntpClient.service();
     debugLoopTimer.blockEnd(8);
 
     // Service command scheduler

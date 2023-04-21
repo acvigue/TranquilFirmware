@@ -4,8 +4,8 @@
 // Modified by Aiden Vigue - 2022
 // -> Switch to WS2812-based LED strip.
 
-//2023
-//Add support for SK6812 RGBW
+// 2023
+// Add support for SK6812 RGBW
 
 #include "LedStrip.h"
 
@@ -61,7 +61,7 @@ CRGBW LedStrip::getRGBWFromRGB(CRGB rgb) {
 }
 
 void LedStrip::convertTempRGBToRGBW() {
-    for(int i = 0; i < _ledCount; i++) {
+    for (int i = 0; i < _ledCount; i++) {
         CRGB desiredColor = _ledsRGBTemp[i];
         CRGBW outColor = getRGBWFromRGB(desiredColor);
         _leds[i] = outColor;
@@ -94,8 +94,8 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
     int sensorSDA = ledConfig.getLong("tslSDA", 0);
     int sensorSCL = ledConfig.getLong("tslSCL", 0);
 
-    Log.notice("%sLED pin %d (RGBW %d) TSL enabled: %d TSL SDA: %d TSL SCL: %d count %d\n", MODULE_PREFIX, ledPin, _ledIsRGBW, sensorEnabled, sensorSDA, sensorSCL,
-               ledCount);
+    Log.notice("%sLED pin %d (RGBW %d) TSL enabled: %d TSL SDA: %d TSL SCL: %d count %d\n", MODULE_PREFIX, ledPin, _ledIsRGBW, sensorEnabled,
+               sensorSDA, sensorSCL, ledCount);
     // Sensor pin isn't necessary for operation.
     if (ledPin == -1) return;
 
@@ -158,7 +158,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
         _secBlueVal = _ledNvValues.getLong("secBlueVal", 127);
         Log.trace("%sLED Setup from JSON\n", MODULE_PREFIX);
     }
-    if(_ledIsRGBW) {
+    if (_ledIsRGBW) {
         _leds = new CRGBW[_ledCount];
         _ledsRGBTemp = new CRGB[ledCount];
         _ledsRGB = (CRGB*)&_leds[0];
@@ -246,6 +246,44 @@ void LedStrip::updateLedFromConfig(const char* pLedJson) {
 }
 
 const char* LedStrip::getConfigStrPtr() { return _ledNvValues.getConfigCStrPtr(); }
+String LedStrip::getCurrentConfigStr() {
+    String jsonStr;
+    jsonStr += "{";
+    jsonStr += "\"ledOn\":";
+    jsonStr += _ledOn ? "1" : "0";
+    jsonStr += ",";
+    jsonStr += "\"ledBrightness\":";
+    jsonStr += _ledBrightness;
+    jsonStr += ",";
+    jsonStr += "\"effectSpeed\":";
+    jsonStr += _effectSpeed;
+    jsonStr += ",";
+    jsonStr += "\"effectID\":";
+    jsonStr += _effectID;
+    jsonStr += ",";
+    jsonStr += "\"primaryRedVal\":";
+    jsonStr += _primaryRedVal;
+    jsonStr += ",";
+    jsonStr += "\"primaryGreenVal\":";
+    jsonStr += _primaryGreenVal;
+    jsonStr += ",";
+    jsonStr += "\"primaryBlueVal\":";
+    jsonStr += _primaryBlueVal;
+    jsonStr += ",";
+    jsonStr += "\"secRedVal\":";
+    jsonStr += _secRedVal;
+    jsonStr += ",";
+    jsonStr += "\"secGreenVal\":";
+    jsonStr += _secGreenVal;
+    jsonStr += ",";
+    jsonStr += "\"secBlueVal\":";
+    jsonStr += _secBlueVal;
+    jsonStr += ",";
+    jsonStr += "\"autoDim\":";
+    jsonStr += _sensorEnabled == 1 ? (_autoDim ? "1" : "0") : "-1";
+    jsonStr += "}";
+    return jsonStr;
+}
 
 float LedStrip::getLuxLevel() {
     if (_sensorEnabled == 1) {
@@ -308,7 +346,7 @@ void LedStrip::service(float currentX, float currentY) {
                     ledBrightness = 255;
                 } else if (_luxLevel > 0.5) {
                     // low brightness
-                    ledBrightness = 600;
+                    ledBrightness = 60;
                 } else if (_luxLevel > 0.02) {
                     // low brightness
                     ledBrightness = 10;
@@ -318,7 +356,6 @@ void LedStrip::service(float currentX, float currentY) {
 
                 if (_ledBrightness != ledBrightness) {
                     _ledBrightness = ledBrightness;
-                    ledConfigChanged = true;
                 }
             }
         }
@@ -379,7 +416,7 @@ void LedStrip::serviceStrip() {
 }
 
 void LedStrip::show() {
-    if(_ledIsRGBW) {
+    if (_ledIsRGBW) {
         convertTempRGBToRGBW();
     }
 
