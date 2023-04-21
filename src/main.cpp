@@ -399,7 +399,7 @@ void loop()
     _robotController.service();
     debugLoopTimer.blockEnd(13);
 
-    // Service the LED strip
+    //Give the LED strip our current position in x,y
     debugLoopTimer.blockStart(14);
     RobotCommandArgs args;
     _robotController.getCurStatus(args);

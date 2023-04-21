@@ -4,6 +4,9 @@
 // Modified by Aiden Vigue - 2022
 // -> Switch to WS2812-based LED strip.
 
+//2023
+//Add support for SK6812 RGBW
+
 #include "LedStrip.h"
 
 #include <FastLED.h>
@@ -26,11 +29,11 @@ LedStrip::LedStrip(ConfigBase& ledNvValues) : _ledNvValues(ledNvValues) {
 }
 
 CRGBW LedStrip::getRGBWFromRGB(CRGB rgb) {
-    // Reference, currently set to 4500k white light:
+    // Reference, currently set to warm light (2700-3000 (2850k)):
     // https://andi-siess.de/rgb-to-color-temperature/
     const uint8_t kWhiteRedChannel = 255;
-    const uint8_t kWhiteGreenChannel = 219;
-    const uint8_t kWhiteBlueChannel = 186;
+    const uint8_t kWhiteGreenChannel = 176;
+    const uint8_t kWhiteBlueChannel = 97;
 
     // Get the maximum between R, G, and B
     uint8_t r = rgb.r;
@@ -84,13 +87,14 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
     if (pinStr.length() != 0) ledPin = ConfigPinMap::getPinFromName(pinStr.c_str());
 
     int ledCount = ledConfig.getLong("ledCount", 0);
+    _ledIsRGBW = ledConfig.getLong("ledRGBW", 0);
 
     // Ambient Light Sensor Pin
     int sensorEnabled = ledConfig.getLong("tslEnabled", 0);
     int sensorSDA = ledConfig.getLong("tslSDA", 0);
     int sensorSCL = ledConfig.getLong("tslSCL", 0);
 
-    Log.notice("%sLED pin %d TSL enabled: %d TSL SDA: %d TSL SCL: %d count %d\n", MODULE_PREFIX, ledPin, sensorEnabled, sensorSDA, sensorSCL,
+    Log.notice("%sLED pin %d (RGBW %d) TSL enabled: %d TSL SDA: %d TSL SCL: %d count %d\n", MODULE_PREFIX, ledPin, _ledIsRGBW, sensorEnabled, sensorSDA, sensorSCL,
                ledCount);
     // Sensor pin isn't necessary for operation.
     if (ledPin == -1) return;
@@ -131,14 +135,12 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
         _ledRealBrightness = 0;
         _effectSpeed = 50;
         _autoDim = false;
-        _primaryRedVal = 0;
-        _primaryGreenVal = 0;
-        _primaryBlueVal = 0;
-        _primaryWhiteVal = 0xcc;
-        _secRedVal = 0;
-        _secGreenVal = 0;
-        _secBlueVal = 0;
-        _secWhiteVal = 0xcc;
+        _primaryRedVal = 127;
+        _primaryGreenVal = 127;
+        _primaryBlueVal = 127;
+        _secRedVal = 127;
+        _secGreenVal = 127;
+        _secBlueVal = 127;
         _effectID = 0;
         updateNv();
     } else {
@@ -151,18 +153,21 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
         _primaryRedVal = _ledNvValues.getLong("primaryRedVal", 127);
         _primaryGreenVal = _ledNvValues.getLong("primaryGreenVal", 127);
         _primaryBlueVal = _ledNvValues.getLong("primaryBlueVal", 127);
-        _primaryWhiteVal = _ledNvValues.getLong("primaryWhiteVal", 127);
         _secRedVal = _ledNvValues.getLong("secRedVal", 127);
         _secGreenVal = _ledNvValues.getLong("secGreenVal", 127);
         _secBlueVal = _ledNvValues.getLong("secBlueVal", 127);
-        _secWhiteVal = _ledNvValues.getLong("secWhiteVal", 127);
         Log.trace("%sLED Setup from JSON\n", MODULE_PREFIX);
     }
-
-    _leds = new CRGBW[_ledCount];
-    _ledsRGBTemp = new CRGB[ledCount];
-    _ledsRGB = (CRGB*)&_leds[0];
-    FastLED.addLeds<WS2812B, LED_PIN>(_ledsRGB, getRGBWsize(_ledCount));
+    if(_ledIsRGBW) {
+        _leds = new CRGBW[_ledCount];
+        _ledsRGBTemp = new CRGB[ledCount];
+        _ledsRGB = (CRGB*)&_leds[0];
+        FastLED.addLeds<WS2812B, LED_PIN>(_ledsRGB, getRGBWsize(_ledCount));
+    } else {
+        _leds = new CRGBW[_ledCount];
+        _ledsRGBTemp = new CRGB[ledCount];
+        FastLED.addLeds<WS2812B, LED_PIN>(_ledsRGBTemp, _ledCount);
+    }
     FastLED.setMaxPowerInVoltsAndMilliamps(5, 1500);
     FastLED.setCorrection(TypicalLEDStrip);
     FastLED.setBrightness(_ledBrightness);
@@ -220,11 +225,6 @@ void LedStrip::updateLedFromConfig(const char* pLedJson) {
         _primaryBlueVal = primaryBlueVal;
         changed = true;
     }
-    int primaryWhiteVal = RdJson::getLong("primaryWhiteVal", 0, pLedJson);
-    if (primaryWhiteVal != _primaryWhiteVal) {
-        _primaryWhiteVal = primaryWhiteVal;
-        changed = true;
-    }
 
     int secRedVal = RdJson::getLong("secRedVal", 0, pLedJson);
     if (secRedVal != _secRedVal) {
@@ -239,11 +239,6 @@ void LedStrip::updateLedFromConfig(const char* pLedJson) {
     int secBlueVal = RdJson::getLong("secBlueVal", 0, pLedJson);
     if (secBlueVal != _secBlueVal) {
         _secBlueVal = secBlueVal;
-        changed = true;
-    }
-    int secWhiteVal = RdJson::getLong("secWhiteVal", 0, pLedJson);
-    if (secWhiteVal != _secWhiteVal) {
-        _secWhiteVal = secWhiteVal;
         changed = true;
     }
 
@@ -372,14 +367,20 @@ void LedStrip::serviceStrip() {
             break;
         case 1:
             effect_pride();
-            convertTempRGBToRGBW();
             break;
         case 2:
             effect_followTheta();
-            convertTempRGBToRGBW();
             break;
         default:
             break;
+    }
+
+    show();
+}
+
+void LedStrip::show() {
+    if(_ledIsRGBW) {
+        convertTempRGBToRGBW();
     }
 
     FastLED.show();
@@ -415,9 +416,6 @@ void LedStrip::updateNv() {
     jsonStr += "\"primaryBlueVal\":";
     jsonStr += _primaryBlueVal;
     jsonStr += ",";
-    jsonStr += "\"primaryWhiteVal\":";
-    jsonStr += _primaryWhiteVal;
-    jsonStr += ",";
     jsonStr += "\"secRedVal\":";
     jsonStr += _secRedVal;
     jsonStr += ",";
@@ -426,9 +424,6 @@ void LedStrip::updateNv() {
     jsonStr += ",";
     jsonStr += "\"secBlueVal\":";
     jsonStr += _secBlueVal;
-    jsonStr += ",";
-    jsonStr += "\"secWhiteVal\":";
-    jsonStr += _secWhiteVal;
     jsonStr += ",";
     jsonStr += "\"autoDim\":";
     jsonStr += _sensorEnabled == 1 ? (_autoDim ? "1" : "0") : "-1";
@@ -445,7 +440,7 @@ void LedStrip::setSleepMode(int sleep) { _isSleeping = sleep; }
 
 void LedStrip::solid_color() {
     for (uint16_t i = 0; i < _ledCount; i++) {
-        _leds[i] = CRGBW(_primaryRedVal, _primaryGreenVal, _primaryBlueVal, _primaryWhiteVal);
+        _ledsRGBTemp[i] = CRGB(_primaryRedVal, _primaryGreenVal, _primaryBlueVal);
     }
 }
 
@@ -501,7 +496,7 @@ void LedStrip::effect_followTheta() {
     float maxLinear = 145.5;
     int blendStrength = min(int(float(255) * (distFromOrigin / maxLinear)), 255);
 
-    CRGB pColor = CRGB(_primaryRedVal, _primaryGreenVal, _primaryWhiteVal);
+    CRGB pColor = CRGB(_primaryRedVal, _primaryGreenVal, _primaryBlueVal);
     CRGB sColor = CRGB(_secRedVal, _secGreenVal, _secBlueVal);
 
     CRGB headColor = blend(pColor, sColor, blendStrength);
@@ -514,7 +509,7 @@ void LedStrip::effect_followTheta() {
     int startLED = (headLED - trail) - 2;
 
     for (int i = 0; i < _ledCount; i++) {
-        _leds[i] = pColor;
+        _ledsRGBTemp[i] = pColor;
     }
 
     for (int i = 0; i < 10; i++) {
