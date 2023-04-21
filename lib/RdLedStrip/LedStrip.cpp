@@ -57,7 +57,7 @@ CRGBW LedStrip::getRGBWFromRGB(CRGB rgb) {
     uint8_t Go = (uint8_t)(g - minWhiteValue * kWhiteGreenChannel / 255);
     uint8_t Bo = (uint8_t)(b - minWhiteValue * kWhiteBlueChannel / 255);
 
-    return CRGBW(Ro, Go, Bo, Wo);
+    return CRGBW(gamma8[Ro], gamma8[Go], gamma8[Bo], Wo);
 }
 
 void LedStrip::convertTempRGBToRGBW() {
@@ -308,7 +308,7 @@ void LedStrip::service(float currentX, float currentY) {
                     ledBrightness = 255;
                 } else if (_luxLevel > 0.5) {
                     // low brightness
-                    ledBrightness = 600;
+                    ledBrightness = 60;
                 } else if (_luxLevel > 0.02) {
                     // low brightness
                     ledBrightness = 10;
@@ -381,6 +381,12 @@ void LedStrip::serviceStrip() {
 void LedStrip::show() {
     if(_ledIsRGBW) {
         convertTempRGBToRGBW();
+    } else {
+        for(int i = 0; i < _ledCount; i++) {
+            _ledsRGBTemp[i].r = gamma8[_ledsRGBTemp[i].r];
+            _ledsRGBTemp[i].g = gamma8[_ledsRGBTemp[i].g];
+            _ledsRGBTemp[i].b = gamma8[_ledsRGBTemp[i].b];
+        }
     }
 
     FastLED.show();
