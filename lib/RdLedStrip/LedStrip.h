@@ -3,18 +3,18 @@
 
 #pragma once
 
-#include "Utils.h"
+#include <FastLED.h>
+#include <SparkFunTSL2561.h>
+#include <Wire.h>
+
 #include "ConfigNVS.h"
 #include "ConfigPinMap.h"
-#include <FastLED.h>
+#include "FastLED_RGBW.h"
+#include "Utils.h"
 
-#include <Wire.h>
-#include <SparkFunTSL2561.h>
-
-class LedStrip
-{
-public:
-    LedStrip(ConfigBase &ledNvValues);
+class LedStrip {
+   public:
+    LedStrip(ConfigBase& ledNvValues);
     void setup(ConfigBase* pConfig, const char* ledStripName);
     void service(float currentX, float currentY);
     void serviceStrip();
@@ -23,14 +23,16 @@ public:
     float getLuxLevel();
     void setSleepMode(int sleep);
 
-private:
+   private:
     void configChanged();
     void updateNv();
     void effect_pride();
     void effect_followTheta();
     void solid_color();
+    void show();
+    void convertTempRGBToRGBW();
 
-private:
+   private:
     String _name;
     ConfigBase* _pHwConfig;
 
@@ -59,12 +61,23 @@ private:
 
     float _currentX = 0;
     float _currentY = 0;
-    CRGB *_leds;
-    SFE_TSL2561 *_tsl;
+
+    //WE DO NOT WRITE TO THIS USE TMP INSTEAD!!!!!
+    CRGBW* _leds;
+
+    //WE DO NOT WRITE TO THIS USE TMP INSTEAD!!!!!
+    CRGB* _ledsRGB;
+
+    //WE WRITE TO THIS!
+    CRGB* _ledsRGBTemp;
+
+    bool _ledIsRGBW;
+    SFE_TSL2561* _tsl;
     bool ledConfigChanged = false;
     unsigned long integration_start_ms = 0;
     bool _isCurrentlyIntegrating = false;
 
     // Store the settings for LED in NV Storage
     ConfigBase& _ledNvValues;
+    CRGBW getRGBWFromRGB(CRGB color);
 };
