@@ -7,6 +7,7 @@
 #include "RestAPIEndpoints.h"
 #include "RdOTAUpdate.h"
 #include "MQTTManager.h"
+#include "WireGuardManager.h"
 #include "NetLog.h"
 #include "FileManager.h"
 #include "NTPClient.h"
@@ -26,6 +27,7 @@ private:
     // 3s doesn't work, 5s seems ok
     static const int DEVICE_UPDATE_DELAY_MS = 7000;
     WiFiManager& _wifiManager;
+    WireGuardManager& _wireGuardManager;
     MQTTManager& _mqttManager;
     RdOTAUpdate& _otaUpdate;
     NetLog& _netLog;
@@ -36,7 +38,7 @@ private:
     static String _systemVersion;
     
 public:
-    RestAPISystem(WiFiManager& wifiManager, MQTTManager& mqttManager,
+    RestAPISystem(WiFiManager& wifiManager, WireGuardManager& wireGuardManager, MQTTManager& mqttManager,
                 RdOTAUpdate& otaUpdate, NetLog& netLog,
                 FileManager& fileManager, NTPClient& ntpClient,
                 CommandScheduler& commandScheduler,
@@ -77,6 +79,11 @@ public:
     void apiCmdSchedGetConfig(String &reqStr, String &respStr);
     void apiPostCmdSchedule(String &reqStr, String &respStr);
     void apiPostCmdScheduleBody(String& reqStr, uint8_t *pData, size_t len, size_t index, size_t total);
+
+    // Wireguard
+    void apiWireGuardGetConfig(String &reqStr, String &respStr);
+    void apiPostWireGuard(String &reqStr, String &respStr);
+    void apiPostWireGuardBody(String& reqStr, uint8_t *pData, size_t len, size_t index, size_t total);
 
     // NTP settings
     void apiNTPGetConfig(String &reqStr, String &respStr);

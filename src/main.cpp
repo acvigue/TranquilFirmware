@@ -31,6 +31,7 @@
 //   Set NTP:        /ntp/gmt/dst/s1/s2/s3  - Set NTP server(s)
 //                                          - gmt = GMT offset in seconds, dst = Daylight Savings Offset in seconds
 //                                          - s1, s2, s3 = NTP servers, e.g. pool.ntp.org
+//   Set wireguard:  /wg/en/
 
 // Don't include this code if unit testing
 #ifndef UNIT_TEST
@@ -40,7 +41,7 @@
 const char* systemType = "RBotFirmware";
 
 // System version
-const char* systemVersion = "2.028.002";
+const char* systemVersion = "3.0.0";
 
 // Build date
 const char* buildDate = __DATE__;
@@ -71,6 +72,10 @@ StatusIndicator wifiStatusLed;
 // WiFi Manager
 #include "WiFiManager.h"
 WiFiManager wifiManager;
+
+// WireGuard Manager
+#include "WireGuardManager.h"
+WireGuardManager wireGuardManager;
 
 // NTP Client
 #include "NTPClient.h"
@@ -120,7 +125,10 @@ ConfigBase hwConfig(hwConfigJSON);
 ConfigNVS robotConfig("robot", 2000);
 
 // Config for WiFi
-ConfigNVS wifiConfig("wifi", 200);
+ConfigNVS wifiConfig("wifi", 300);
+
+// Config for WireGuard
+ConfigNVS wireGuardConfig("wireguard", 400);
 
 // Config for NTP
 ConfigNVS ntpConfig("ntp", 100);
@@ -152,7 +160,7 @@ NetLog netLog(Serial, mqttManager, commandSerial);
 
 // REST API System
 #include "RestAPISystem.h"
-RestAPISystem restAPISystem(wifiManager, mqttManager,
+RestAPISystem restAPISystem(wifiManager, wireGuardManager, mqttManager,
                             otaUpdate, netLog, fileManager, ntpClient,
                             commandScheduler,
                             systemType, systemVersion);
@@ -228,6 +236,9 @@ void setup()
     // WiFi Config
     wifiConfig.setup();
 
+    // WireGuard Config
+    wireGuardConfig.setup();
+
     // NTP Config
     ntpConfig.setup();
 
@@ -245,6 +256,9 @@ void setup()
 
     // WiFi Manager
     wifiManager.setup(hwConfig, &wifiConfig, systemType, &wifiStatusLed);
+
+    // WireGuard Manager
+    wireGuardManager.setup(&wireGuardConfig);
 
     // NTP Client
     ntpClient.setup(&hwConfig, "ntpConfig", &ntpConfig);
@@ -275,19 +289,20 @@ void setup()
     // Add debug blocks
     debugLoopTimer.blockAdd(0, "LoopTimer");
     debugLoopTimer.blockAdd(1, "WiFi");
-    debugLoopTimer.blockAdd(2, "Web");
-    debugLoopTimer.blockAdd(3, "SysAPI");
-    debugLoopTimer.blockAdd(4, "Console");
-    debugLoopTimer.blockAdd(5, "MQTT");
-    debugLoopTimer.blockAdd(6, "OTA");
-    debugLoopTimer.blockAdd(7, "NetLog");
-    debugLoopTimer.blockAdd(8, "NTP");
-    debugLoopTimer.blockAdd(9, "Sched");
-    debugLoopTimer.blockAdd(10, "WifiLed");
-    debugLoopTimer.blockAdd(11, "Status");
-    debugLoopTimer.blockAdd(12, "Flow");
-    debugLoopTimer.blockAdd(13, "Robot");
-    debugLoopTimer.blockAdd(14, "LedStrip");
+    debugLoopTimer.blockAdd(2, "WireGuard");
+    debugLoopTimer.blockAdd(3, "Web");
+    debugLoopTimer.blockAdd(4, "SysAPI");
+    debugLoopTimer.blockAdd(5, "Console");
+    debugLoopTimer.blockAdd(6, "MQTT");
+    debugLoopTimer.blockAdd(7, "OTA");
+    debugLoopTimer.blockAdd(8, "NetLog");
+    debugLoopTimer.blockAdd(9, "NTP");
+    debugLoopTimer.blockAdd(10, "Sched");
+    debugLoopTimer.blockAdd(11, "WifiLed");
+    debugLoopTimer.blockAdd(12, "Status");
+    debugLoopTimer.blockAdd(13, "Flow");
+    debugLoopTimer.blockAdd(14, "Robot");
+    debugLoopTimer.blockAdd(15, "LedStrip");
 
     // Reconfigure the robot and other settings
     _workManager.reconfigure();
@@ -321,57 +336,62 @@ void loop()
     wifiManager.service();
     debugLoopTimer.blockEnd(1);
 
+    // Service WireGuard
+    debugLoopTimer.blockStart(2);
+    wireGuardManager.service();
+    debugLoopTimer.blockEnd(2);
+
     // Service the web server
     if (wifiManager.isConnected())
     {
         // Begin the web server
-        debugLoopTimer.blockStart(2);
+        debugLoopTimer.blockStart(3);
         webServer.begin(true);
-        debugLoopTimer.blockEnd(2);
+        debugLoopTimer.blockEnd(3);
     }
 
     // Service the system API (restart)
-    debugLoopTimer.blockStart(3);
-    restAPISystem.service();
-    debugLoopTimer.blockEnd(3);
-
-    // Serial console
     debugLoopTimer.blockStart(4);
-    serialConsole.service();
+    restAPISystem.service();
     debugLoopTimer.blockEnd(4);
 
-    // Service MQTT
+    // Serial console
     debugLoopTimer.blockStart(5);
-    //mqttManager.service();
+    serialConsole.service();
     debugLoopTimer.blockEnd(5);
 
-    // Service OTA Update
+    // Service MQTT
     debugLoopTimer.blockStart(6);
-    //TODO
+    //mqttManager.service();
     debugLoopTimer.blockEnd(6);
 
+    // Service OTA Update
+    debugLoopTimer.blockStart(7);
+    //TODO
+    debugLoopTimer.blockEnd(7);
+
     // Service NetLog
-    debugLoopTimer.blockStart(7);
+    debugLoopTimer.blockStart(8);
     //netLog.service(serialConsole.getXonXoff());
-    debugLoopTimer.blockStart(7);
+    debugLoopTimer.blockStart(8);
 
     // Service NTP
-    debugLoopTimer.blockStart(8);
-    ntpClient.service();
-    debugLoopTimer.blockEnd(8);
-
-    // Service command scheduler
     debugLoopTimer.blockStart(9);
-    commandScheduler.service();
+    ntpClient.service();
     debugLoopTimer.blockEnd(9);
 
-    // Service the status LED
+    // Service command scheduler
     debugLoopTimer.blockStart(10);
-    //wifiStatusLed.service();
+    commandScheduler.service();
     debugLoopTimer.blockEnd(10);
 
-    // Check for changes to status
+    // Service the status LED
     debugLoopTimer.blockStart(11);
+    //wifiStatusLed.service();
+    debugLoopTimer.blockEnd(11);
+
+    // Check for changes to status
+    debugLoopTimer.blockStart(12);
     if (_workManager.checkStatusChanged())
     {
         // Send changed status
@@ -379,24 +399,24 @@ void loop()
         _workManager.queryStatus(newStatus);
         webServer.sendAsyncEvent(newStatus.c_str(), "status");
     }
-    debugLoopTimer.blockEnd(11);
-
-    // Service the command interface (which pumps the workflow queue)
-    debugLoopTimer.blockStart(12);
-    _workManager.service();
     debugLoopTimer.blockEnd(12);
 
-    // Service the robot controller
+    // Service the command interface (which pumps the workflow queue)
     debugLoopTimer.blockStart(13);
-    _robotController.service();
+    _workManager.service();
     debugLoopTimer.blockEnd(13);
 
-    //Give the LED strip our current position in x,y
+    // Service the robot controller
     debugLoopTimer.blockStart(14);
+    _robotController.service();
+    debugLoopTimer.blockEnd(14);
+
+    //Give the LED strip our current position in x,y
+    debugLoopTimer.blockStart(15);
     RobotCommandArgs args;
     _robotController.getCurStatus(args);
     ledStrip.service(args.getPointMM().getVal(0), args.getPointMM().getVal(1));
-    debugLoopTimer.blockEnd(14);
+    debugLoopTimer.blockEnd(15);
 }
 
 #endif // UNIT_TEST

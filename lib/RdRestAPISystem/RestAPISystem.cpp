@@ -8,12 +8,12 @@ static const char* MODULE_PREFIX = "RestAPISystem: ";
 
 String RestAPISystem::_systemVersion;
 
-RestAPISystem::RestAPISystem(WiFiManager& wifiManager, MQTTManager& mqttManager,
+RestAPISystem::RestAPISystem(WiFiManager& wifiManager, WireGuardManager& wireGuardManager, MQTTManager& mqttManager,
             RdOTAUpdate& otaUpdate, NetLog& netLog,
             FileManager& fileManager, NTPClient& ntpClient,
             CommandScheduler& commandScheduler,
             const char* systemType, const char* systemVersion) :
-            _wifiManager(wifiManager), _mqttManager(mqttManager), 
+            _wifiManager(wifiManager), _wireGuardManager(wireGuardManager), _mqttManager(mqttManager), 
             _otaUpdate(otaUpdate), _netLog(netLog),
             _fileManager(fileManager), _ntpClient(ntpClient),
             _commandScheduler(commandScheduler)
@@ -139,6 +139,19 @@ void RestAPISystem::setup(RestAPIEndpoints &endpoints)
                             std::placeholders::_1, std::placeholders::_2, 
                             std::placeholders::_3, std::placeholders::_4,
                             std::placeholders::_5));
+
+    //Wireguard
+    endpoints.addEndpoint("wireGuardGet", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET, 
+                std::bind(&RestAPISystem::apiWireGuardGetConfig, this, std::placeholders::_1, std::placeholders::_2), 
+                "Get WireGuard settings");
+    endpoints.addEndpoint("wireGuardSet", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_POST,
+                            std::bind(&RestAPISystem::apiPostWireGuard, this, std::placeholders::_1, std::placeholders::_2),
+                            "Set WireGuard settings", "application/json", NULL, true, NULL, 
+                            std::bind(&RestAPISystem::apiPostWireGuardBody, this, 
+                            std::placeholders::_1, std::placeholders::_2, 
+                            std::placeholders::_3, std::placeholders::_4,
+                            std::placeholders::_5));
+
     }
 
 String RestAPISystem::getWifiStatusStr()
@@ -417,6 +430,14 @@ void RestAPISystem::apiCmdSchedGetConfig(String &reqStr, String &respStr)
     Utils::setJsonBoolResult(respStr, true, configStr.c_str());
 }
 
+void RestAPISystem::apiWireGuardGetConfig(String &reqStr, String &respStr)
+{
+    // Get config
+    String configStr;
+    _wireGuardManager.getConfig(configStr);
+    Utils::setJsonBoolResult(respStr, true, configStr.c_str());
+}
+
 void RestAPISystem::apiPostCmdSchedule(String &reqStr, String &respStr)
 {
     Log.notice("%sPostCmdSchedule %s\n", MODULE_PREFIX, reqStr.c_str());
@@ -429,6 +450,20 @@ void RestAPISystem::apiPostCmdScheduleBody(String& reqStr, uint8_t *pData, size_
     Log.notice("%sPostCmdScheduleBody len %d\n", MODULE_PREFIX, len);
     // Store the settings
     _commandScheduler.setConfig(pData, len);
+}
+
+void RestAPISystem::apiPostWireGuard(String &reqStr, String &respStr)
+{
+    Log.notice("%sPostWireGuard %s\n", MODULE_PREFIX, reqStr.c_str());
+    // Result
+    Utils::setJsonBoolResult(respStr, true);      
+}
+
+void RestAPISystem::apiPostWireGuardBody(String& reqStr, uint8_t *pData, size_t len, size_t index, size_t total)
+{
+    Log.notice("%sPostWireGuardBody len %d\n", MODULE_PREFIX, len);
+    // Store the settings
+    _wireGuardManager.setConfig(pData, len);
 }
 
 void RestAPISystem::apiNTPGetConfig(String &reqStr, String &respStr)
