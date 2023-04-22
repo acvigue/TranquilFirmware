@@ -5,19 +5,12 @@
 
 static const char* MODULE_PREFIX = "ConfigNVS: ";
 
-ConfigNVS::ConfigNVS(const char *configNamespace, int configMaxlen) :
-    ConfigBase(configMaxlen)
-{
-    _configNamespace = configNamespace;
-}
+ConfigNVS::ConfigNVS(const char* configNamespace, int configMaxlen) : ConfigBase(configMaxlen) { _configNamespace = configNamespace; }
 
-ConfigNVS::~ConfigNVS()
-{
-}
+ConfigNVS::~ConfigNVS() {}
 
 // Clear
-void ConfigNVS::clear()
-{
+void ConfigNVS::clear() {
     // Open preferences writeable
     _preferences.begin(_configNamespace.c_str(), false);
 
@@ -35,8 +28,7 @@ void ConfigNVS::clear()
 }
 
 // Initialise
-bool ConfigNVS::setup()
-{
+bool ConfigNVS::setup() {
     // Setup base class
     ConfigBase::setup();
 
@@ -49,9 +41,7 @@ bool ConfigNVS::setup()
     // Get config string
     String configData = _preferences.getString("JSON", "{}");
     setConfigData(configData.c_str());
-    Log.trace("%sConfig %s read: len(%d) %s maxlen %d\n", MODULE_PREFIX, 
-                _configNamespace.c_str(), configData.length(), 
-                configData.c_str(), ConfigBase::getMaxLen());
+    Log.trace("%sConfig %s read: len(%d) maxlen %d\n", MODULE_PREFIX, _configNamespace.c_str(), configData.length(), ConfigBase::getMaxLen());
 
     // Close prefs
     _preferences.end();
@@ -61,25 +51,19 @@ bool ConfigNVS::setup()
 }
 
 // Write configuration string
-bool ConfigNVS::writeConfig()
-{
+bool ConfigNVS::writeConfig() {
     // Get length of string
-    if (_dataStrJSON.length() >= _configMaxDataLen)
-        _dataStrJSON = _dataStrJSON.substring(0, _configMaxDataLen-1);
-    Log.trace("%sWriting %s config len: %d\n", MODULE_PREFIX, 
-                _configNamespace.c_str(), _dataStrJSON.length());
+    if (_dataStrJSON.length() >= _configMaxDataLen) _dataStrJSON = _dataStrJSON.substring(0, _configMaxDataLen - 1);
+    Log.trace("%sWriting %s config len: %d\n", MODULE_PREFIX, _configNamespace.c_str(), _dataStrJSON.length());
 
     // Open preferences writeable
     _preferences.begin(_configNamespace.c_str(), false);
 
     // Set config string
     int numPut = _preferences.putString("JSON", _dataStrJSON.c_str());
-    if (numPut != _dataStrJSON.length())
-    {
+    if (numPut != _dataStrJSON.length()) {
         Log.trace("%sFailed %s write - written = %d\n", MODULE_PREFIX, _configNamespace.c_str(), numPut);
-    }
-    else
-    {
+    } else {
         Log.trace("%sWrite ok written = %d\n", MODULE_PREFIX, numPut);
     }
 
@@ -87,20 +71,16 @@ bool ConfigNVS::writeConfig()
     _preferences.end();
 
     // Call config change callbacks
-    for (int i = 0; i < _configChangeCallbacks.size(); i++)
-    {
-        if (_configChangeCallbacks[i])
-            (_configChangeCallbacks[i])();
+    for (int i = 0; i < _configChangeCallbacks.size(); i++) {
+        if (_configChangeCallbacks[i]) (_configChangeCallbacks[i])();
     }
     // Ok
     return true;
 }
 
-void ConfigNVS::registerChangeCallback(ConfigChangeCallbackType configChangeCallback)
-{
+void ConfigNVS::registerChangeCallback(ConfigChangeCallbackType configChangeCallback) {
     // Save callback if required
-    if (configChangeCallback)
-    {
+    if (configChangeCallback) {
         _configChangeCallbacks.push_back(configChangeCallback);
     }
 }
