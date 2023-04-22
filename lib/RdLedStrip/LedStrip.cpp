@@ -89,6 +89,8 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
     int ledCount = ledConfig.getLong("ledCount", 0);
     _ledIsRGBW = ledConfig.getLong("ledRGBW", 0);
 
+    _ledAngleOffset = ledConfig.getLong("ledAngleOffset", 0);
+
     // Ambient Light Sensor Pin
     int sensorEnabled = ledConfig.getLong("tslEnabled", 0);
     int sensorSDA = ledConfig.getLong("tslSDA", 0);
@@ -528,8 +530,9 @@ void LedStrip::effect_pride() {
 }
 
 void LedStrip::effect_followTheta() {
-    int trail = 5;
-    CRGB grad[(trail * 2)];
+    int trail = 10;
+    int sides = 3;
+    CRGB grad[(trail * 2) + (sides * 2)];
 
     // Calculate theta. Will always be POSITIVE (0 -> 2PI)
     float theta = atan2(_currentY, _currentX);
@@ -544,19 +547,22 @@ void LedStrip::effect_followTheta() {
 
     CRGB headColor = blend(pColor, sColor, blendStrength);
     fill_gradient_RGB(grad, 0, pColor, trail, headColor);
-    fill_gradient_RGB(grad, trail, headColor, trail * 2, pColor);
+    for(int i = trail; i < trail + sides; i++) {
+            grad[i] = headColor;
+    }
+    fill_gradient_RGB(grad, (trail) + sides, headColor, (trail * 2) + (sides * 2), pColor);
 
     float rot = theta / float(2 * M_PI);
     int headLED = int(roundf(float(rot * float(_ledCount))));
 
-    int startLED = (headLED - trail) - 2;
+    int startLED = (headLED - trail) - (sides * 2);
 
     for (int i = 0; i < _ledCount; i++) {
         _ledsRGBTemp[i] = pColor;
     }
 
-    for (int i = 0; i < 10; i++) {
-        int ledIndex = (startLED + i);
+    for (int i = 0; i < ((trail * 2) + 2); i++) {
+        int ledIndex = (startLED + i) + _ledAngleOffset;
         _ledsRGBTemp[(ledIndex % _ledCount + _ledCount) % _ledCount] = grad[i];
     }
 }

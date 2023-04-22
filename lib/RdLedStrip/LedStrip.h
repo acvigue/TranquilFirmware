@@ -44,6 +44,7 @@ class LedStrip {
     int _sensorEnabled;
     bool _currentGain = 0;
     unsigned int _currentIntegrationMS = 402;
+    int _ledAngleOffset;
 
     bool _ledOn;
     byte _ledBrightness = -1;
