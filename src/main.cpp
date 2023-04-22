@@ -41,7 +41,7 @@
 const char* systemType = "RBotFirmware";
 
 // System version
-const char* systemVersion = "3.0.0";
+const char* systemVersion = "3.0.2";
 
 // Build date
 const char* buildDate = __DATE__;
@@ -110,7 +110,7 @@ static const char *hwConfigJSON = {
     "\"mqttEnabled\":0,"
     "\"webServerEnabled\":1,"
     "\"webServerPort\":80,"
-    "\"OTAUpdate\":{\"enabled\":0,\"directOk\":1},"
+    "\"OTAUpdate\":{\"enabled\":1,\"manifestURL\":\"https://pub-085564545d0642ad824517a59d8b1c10.r2.dev/manifest.json\"},"
     "\"serialConsole\":{\"portNum\":0},"
     "\"commandSerial\":{\"portNum\":-1,\"baudRate\":115200},"
     "\"ntpConfig\":{\"ntpServer\":\"pool.ntp.org\", \"gmtOffsetSecs\":0, \"dstOffsetSecs\":0},"
@@ -238,6 +238,9 @@ void setup()
 
     // WireGuard Config
     wireGuardConfig.setup();
+
+    //OTA update
+    otaUpdate.setup(hwConfig, systemType, systemVersion);
 
     // NTP Config
     ntpConfig.setup();
@@ -367,7 +370,7 @@ void loop()
 
     // Service OTA Update
     debugLoopTimer.blockStart(7);
-    //TODO
+    otaUpdate.service(!_workManager.queueIsEmpty());
     debugLoopTimer.blockEnd(7);
 
     // Service NetLog
@@ -387,7 +390,7 @@ void loop()
 
     // Service the status LED
     debugLoopTimer.blockStart(11);
-    //wifiStatusLed.service();
+    wifiStatusLed.service();
     debugLoopTimer.blockEnd(11);
 
     // Check for changes to status
@@ -396,6 +399,7 @@ void loop()
     {
         // Send changed status
         String newStatus;
+        _workManager.queueIsEmpty();
         _workManager.queryStatus(newStatus);
         webServer.sendAsyncEvent(newStatus.c_str(), "status");
     }

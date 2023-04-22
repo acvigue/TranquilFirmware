@@ -209,7 +209,7 @@ void WiFiManager::wiFiEventHandler(WiFiEvent_t event) {
             }
             // Add service to MDNS-SD
             MDNS.addService("http", "tcp", 80);
-            MDNS.addService("sandbot", "tcp", 80);
+
             break;
         case SYSTEM_EVENT_STA_DISCONNECTED:
             Log.notice("%sDisconnected\n", MODULE_PREFIX);

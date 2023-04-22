@@ -122,10 +122,4 @@ public:
     // Upload file to file system - part of file (from HTTP POST file)
     void apiUploadToFileManPart(String& req, String& filename, size_t contentLen, size_t index, 
                 uint8_t *data, size_t len, bool finalBlock);
-
-    // ESP Firmware update
-    void apiESPFirmwarePart(String& req, String& filename, size_t contentLen, size_t index, 
-                    uint8_t *data, size_t len, bool finalBlock);
-    void apiESPFirmwareUpdateDone(String &reqStr, String &respStr);
-
 };

@@ -112,21 +112,6 @@ void RestAPISystem::setup(RestAPIEndpoints &endpoints)
                             std::placeholders::_3, std::placeholders::_4,
                             std::placeholders::_5, std::placeholders::_6,
                             std::placeholders::_7));
-    endpoints.addEndpoint("espFirmwareUpdate",
-                        RestAPIEndpointDef::ENDPOINT_CALLBACK, 
-                        RestAPIEndpointDef::ENDPOINT_POST,
-                        std::bind(&RestAPISystem::apiESPFirmwareUpdateDone, this, 
-                                std::placeholders::_1, std::placeholders::_2),
-                        "Update ESP32 firmware", "application/json", 
-                        NULL, 
-                        true, 
-                        NULL,
-                        NULL,
-                        std::bind(&RestAPISystem::apiESPFirmwarePart, this, 
-                                std::placeholders::_1, std::placeholders::_2, 
-                                std::placeholders::_3, std::placeholders::_4,
-                                std::placeholders::_5, std::placeholders::_6,
-                                std::placeholders::_7));
 
     // Gat and set cmd scheduler JSON
     endpoints.addEndpoint("cmdScheduleGet", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET, 
@@ -582,20 +567,5 @@ void RestAPISystem::apiUploadToFileManPart(String& req, String& filename, size_t
     Log.verbose("%sapiUpToFileMan %d, %d, %d, %d\n", MODULE_PREFIX, contentLen, index, len, finalBlock);
     if (contentLen > 0)
         _fileManager.uploadAPIBlockHandler("", req, filename, contentLen, index, data, len, finalBlock);
-}
-
-// ESP Firmware update
-void RestAPISystem::apiESPFirmwarePart(String& req, String& filename, size_t contentLen, size_t index, 
-                uint8_t *data, size_t len, bool finalBlock)
-{
-    // Handle with OTA update
-    _otaUpdate.directFirmwareUpdatePart(filename, contentLen, index, data, len, finalBlock);
-}
-
-void RestAPISystem::apiESPFirmwareUpdateDone(String &reqStr, String &respStr)
-{
-    // Handle with OTA update
-    _otaUpdate.directFirmwareUpdateDone();
-    Utils::setJsonBoolResult(respStr, true);
 }
 
