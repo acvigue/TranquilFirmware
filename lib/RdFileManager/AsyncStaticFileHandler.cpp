@@ -45,8 +45,8 @@ AsyncStaticFileHandler::AsyncStaticFileHandler(const char* uri, const char* path
   if (_path[_path.length()-1] == '/') _path = _path.substring(0, _path.length()-1);
 
   // Reset stats
-  _gzipFirst = false;
-  _gzipStats = 0xF8;
+  _brotliFirst = false;
+  _brotliStats = 0xF8;
   _foundFileName = "";
 }
 
@@ -119,7 +119,7 @@ bool AsyncStaticFileHandler::_getFile(AsyncWebServerRequest *request)
 
   path = _path + path;
 
-  // Do we have a file or .gz file
+  // Do we have a file or .br file
   if (!canSkipFileCheck && _fileExists(request, path))
     return true;
 
@@ -160,25 +160,25 @@ size_t AsyncStaticFileHandler::fileSizeInBytes(const String& fileName)
 bool AsyncStaticFileHandler::_fileExists(AsyncWebServerRequest *request, const String& path)
 {
   bool fileFound = false;
-  bool gzipFound = false;
+  bool brotliFound = false;
 
-  String gzip = path + ".gz";
+  String brotli = path + ".br";
 
-  if (_gzipFirst) {
-    gzipFound = existsAndIsAFile(gzip);
-    if (!gzipFound){
+  if (_brotliFirst) {
+    brotliFound = existsAndIsAFile(brotli);
+    if (!brotliFound){
       fileFound = existsAndIsAFile(path);
     }
   } else {
     fileFound = existsAndIsAFile(path);
     if (!fileFound){
-      gzipFound = existsAndIsAFile(gzip);
+      brotliFound = existsAndIsAFile(brotli);
     }
   }
 
-  _foundFileName = gzipFound ? gzip : path;
+  _foundFileName = brotliFound ? brotli : path;
 
-  bool found = fileFound || gzipFound;
+  bool found = fileFound || brotliFound;
 
   if (found) {
     // Extract the file name from the path and keep it in _tempObject
@@ -187,11 +187,11 @@ bool AsyncStaticFileHandler::_fileExists(AsyncWebServerRequest *request, const S
     snprintf(_tempPath, pathLen+1, "%s", path.c_str());
     request->_tempObject = (void*)_tempPath;
 
-    // Calculate gzip statistic
-    _gzipStats = (_gzipStats << 1) + (gzipFound ? 1 : 0);
-    if (_gzipStats == 0x00) _gzipFirst = false; // All files are not gzip
-    else if (_gzipStats == 0xFF) _gzipFirst = true; // All files are gzip
-    else _gzipFirst = _countBits(_gzipStats) > 4; // IF we have more gzip files - try gzip first
+    // Calculate brotli statistic
+    _brotliStats = (_brotliStats << 1) + (brotliFound ? 1 : 0);
+    if (_brotliStats == 0x00) _brotliFirst = false; // All files are not brotli
+    else if (_brotliStats == 0xFF) _brotliFirst = true; // All files are brotli
+    else _brotliFirst = _countBits(_brotliStats) > 4; // IF we have more brotli files - try brotli first
   }
 
   return found;
@@ -218,11 +218,11 @@ void AsyncStaticFileHandler::handleRequest(AsyncWebServerRequest *request)
   size_t fileSize = fileSizeInBytes(filename);
 
   if(fileSize == 0) {
-    String filename_gz = filename + ".gz";
-    size_t fileSize_gz = fileSizeInBytes(filename_gz);
-    if(fileSize_gz > 0) {
-      filename = filename_gz;
-      fileSize = fileSize_gz;
+    String filename_br = filename + ".br";
+    size_t fileSize_br = fileSizeInBytes(filename_br);
+    if(fileSize_br > 0) {
+      filename = filename_br;
+      fileSize = fileSize_br;
     }
   }
 
@@ -279,7 +279,7 @@ void AsyncStaticFileResponse::_setContentType(const String& path){
   else if (path.endsWith(".xml")) _contentType = "text/xml";
   else if (path.endsWith(".pdf")) _contentType = "application/pdf";
   else if (path.endsWith(".zip")) _contentType = "application/zip";
-  else if(path.endsWith(".gz")) _contentType = "application/x-gzip";
+  else if(path.endsWith(".br")) _contentType = "application/x-brotli";
   else _contentType = "text/plain";
 }
 
@@ -288,9 +288,9 @@ AsyncStaticFileResponse::AsyncStaticFileResponse(const String& foundFileName, co
   _path = path;
   _pFile = NULL;
 
-  if(!download && foundFileName.endsWith(".gz")){
-    addHeader("Content-Encoding", "gzip");
-    _callback = nullptr; // Unable to process gzipped templates
+  if(!download && foundFileName.endsWith(".br")){
+    addHeader("Content-Encoding", "br");
+    _callback = nullptr; // Unable to process brotliped templates
     _sendContentLength = true;
     _chunked = false;
   }
@@ -298,9 +298,9 @@ AsyncStaticFileResponse::AsyncStaticFileResponse(const String& foundFileName, co
   _contentLength = AsyncStaticFileHandler::fileSizeInBytes(_path);
   _pFile = fopen(_path.c_str(), "rb");
 
-  if(foundFileName.endsWith(".gz")) {
+  if(foundFileName.endsWith(".br")) {
     String path_x = path;
-    path_x.replace(".gz","");
+    path_x.replace(".br","");
     _setContentType(path_x);
   } else {
     if(contentType == "")
@@ -312,7 +312,7 @@ AsyncStaticFileResponse::AsyncStaticFileResponse(const String& foundFileName, co
   int filenameStart = path.lastIndexOf('/') + 1;
   char buf[26+path.length()-filenameStart];
   char* filename = (char*)path.c_str() + filenameStart;
-  if(!foundFileName.endsWith(".gz")) {
+  if(!foundFileName.endsWith(".br")) {
     if(download) {
       snprintf(buf, sizeof (buf), "attachment; filename=\"%s\"", filename);
     } else {

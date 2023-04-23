@@ -59,11 +59,6 @@ void RdOTAUpdate::service(bool isBusy) {
     // Check if enabled
     if (!_otaEnabled) return;
 
-    // Check for updates every 5 mins (if not running a pattern)
-    if (Utils::isTimeout(millis(), _lastUpdateCheckMillis, 5 * 60 * 1000)) {
-        _firmwareCheckRequired = true;
-    }
-
     // Time to check for firmware?
     if (_firmwareCheckRequired && !isBusy) {
         _firmwareCheckRequired = false;

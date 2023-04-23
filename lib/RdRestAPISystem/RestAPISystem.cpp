@@ -81,10 +81,10 @@ void RestAPISystem::setup(RestAPIEndpoints &endpoints)
                     "Get log configuration");
     endpoints.addEndpoint("ntp", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET, 
                     std::bind(&RestAPISystem::apiNTPSetConfig, this, std::placeholders::_1, std::placeholders::_2), 
-                    "Set NTP to gmt/dst/server1/s2/s3");
+                    "Set NTP to tz/server (~ replaces / in timezone)");
     endpoints.addEndpoint("ntpget", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET, 
                     std::bind(&RestAPISystem::apiNTPGetConfig, this, std::placeholders::_1, std::placeholders::_2), 
-                    "Set NTP to gmt/dst/server1/s2/s3");
+                    "get ntp config");
     endpoints.addEndpoint("reformatfs", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET, 
                     std::bind(&RestAPISystem::apiReformatFS, this, std::placeholders::_1, std::placeholders::_2), 
                     "Reformat file system e.g. /spiffs");
@@ -463,18 +463,13 @@ void RestAPISystem::apiNTPGetConfig(String &reqStr, String &respStr)
 void RestAPISystem::apiNTPSetConfig(String &reqStr, String &respStr)
 {
     // Set NTP
-    String gmtOffsetSecsStr = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 1);
-    String dstOffsetSecsStr = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 2);
-    String server1Str = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 3);
-    String server2Str = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 4);
-    String server3Str = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 5);
-    int gmtOffsetSecs = atoi(gmtOffsetSecsStr.c_str());
-    int dstOffsetSecs = atoi(dstOffsetSecsStr.c_str());
-    Log.trace("%sNNTPSetup GMT %d DST %d S1 %s S2 %s S3 %s\n", MODULE_PREFIX, 
-            gmtOffsetSecs, dstOffsetSecs,
-            server1Str.c_str(), server3Str.c_str(), server3Str.c_str());
-    _ntpClient.setConfig(gmtOffsetSecs, dstOffsetSecs, 
-            server1Str.c_str(), server3Str.c_str(), server3Str.c_str());
+    String tzStr = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 1);
+    tzStr.replace("~", "/");
+    String serverStr = RestAPIEndpoints::getNthArgStr(reqStr.c_str(), 2);
+    Log.trace("%sNNTPSetup TZ %s Server %s\n", MODULE_PREFIX, 
+            tzStr.c_str(),
+            serverStr.c_str());
+    _ntpClient.setConfig(tzStr.c_str(), serverStr.c_str());
     Utils::setJsonBoolResult(respStr, true);
 }
 

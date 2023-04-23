@@ -57,9 +57,9 @@ class AsyncStaticFileHandler: public AsyncWebHandler {
     String _last_modified;
     AwsTemplateProcessor _callback;
     bool _isDir;
-    bool _gzipFirst;
+    bool _brotliFirst;
     String _foundFileName;
-    uint8_t _gzipStats;
+    uint8_t _brotliStats;
   public:
     AsyncStaticFileHandler(const char* uri, const char* path, const char* cache_control);
     virtual bool canHandle(AsyncWebServerRequest *request) override final;
