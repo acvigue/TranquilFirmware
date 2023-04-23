@@ -420,6 +420,7 @@ void RestAPISystem::apiWireGuardGetConfig(String &reqStr, String &respStr)
     // Get config
     String configStr;
     _wireGuardManager.getConfig(configStr);
+    configStr = "\"wireGuard\":" + configStr;
     Utils::setJsonBoolResult(respStr, true, configStr.c_str());
 }
 
