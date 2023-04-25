@@ -78,16 +78,8 @@ void TrinamicsController::configure(const char* configJSON) {
             TMC2208Stepper driver_1 = TMC2208Stepper(&serial1, 0.11f);
             TMC2208Stepper driver_2 = TMC2208Stepper(&serial2, 0.11f);
 
-            serial1.begin(115200, SERIAL_8N1, _tx1, _tx1);
-            serial2.begin(115200, SERIAL_8N1, _tx2, _tx2);
-
-            if (driver_1.test_connection() != 0) {
-                Log.warning("%sdriver 1 failed conntest!", MODULE_PREFIX);
-            }
-
-            if (driver_2.test_connection() != 0) {
-                Log.warning("%sdriver 2 failed conntest!", MODULE_PREFIX);
-            }
+            serial1.begin(115200, SERIAL_8N1, 34, _tx1);
+            serial2.begin(115200, SERIAL_8N1, 34, _tx2);
             
             driver_1.reset();
             driver_2.reset();
