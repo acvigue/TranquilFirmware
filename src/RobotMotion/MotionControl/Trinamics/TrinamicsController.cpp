@@ -111,7 +111,7 @@ void TrinamicsController::configure(const char* configJSON) {
             }
         }
 
-        // Configure TMC2130s
+        // Configure TMC2209s
         if (mcChip == "TMC2209") {
             HardwareSerial serial1 = HardwareSerial(1);
             HardwareSerial serial2 = HardwareSerial(2);

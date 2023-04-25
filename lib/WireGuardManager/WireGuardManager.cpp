@@ -54,9 +54,9 @@ void WireGuardManager::service() {
 }
 
 String WireGuardManager::formConfigStr() {
-    return "{\"enabled\": " + String(_wireGuardEnabled) + ", \"privateKey\": \"" + _wireGuardPrivateKey + "\", \"publicKey\": \"" +
-           _wireGuardPublicKey + "\", \"psk\": \"" + _wireGuardPSK + "\", \"localIP\": \"" + _wireGuardLocalIP + "\", \"endpointAddress\": \"" +
-           _wireGuardEndpointAddress + "\", \"endpointPort\": " + String(_wireGuardEndpointPort) + "}";
+    return "{\"enabled\":" + String(_wireGuardEnabled) + ",\"privateKey\":\"" + _wireGuardPrivateKey + "\",\"publicKey\":\"" +
+           _wireGuardPublicKey + "\",\"psk\":\"" + _wireGuardPSK + "\",\"localIP\":\"" + _wireGuardLocalIP + "\",\"endpointAddress\":\"" +
+           _wireGuardEndpointAddress + "\",\"endpointPort\":" + String(_wireGuardEndpointPort) + ",\"connected\":" + String(_wireGuard.is_initialized()) + "}";
 }
 
 void WireGuardManager::setConfig(const char *configJson) {

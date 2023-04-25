@@ -177,7 +177,7 @@ int RestAPISystem::reportHealth(int bitPosStart, unsigned long *pOutHash, String
                         String(mac[3], HEX) + ":" + String(mac[4], HEX) + ":" + String(mac[5], HEX);
         String sOut = "\"wifiIP\":\"" + WiFi.localIP().toString() + "\",\"wifiConn\":\"" + getWifiStatusStr() + "\"";
         sOut += ",\"ssid\":\"" + WiFi.SSID() + "\",\"MAC\":\"" + macStr + "\",\"RSSI\":" + String(WiFi.RSSI());
-        sOut += ",\"espV\":\"" + _systemVersion + "\"";
+        sOut += ",\"espV\":\"" + _systemVersion + " (built " + __DATE__ + " " + __TIME__ + ")\"";
         *pOutStr = sOut;
     }
     // Return number of bits in hash
