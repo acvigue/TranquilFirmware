@@ -31,7 +31,6 @@
 //   Set NTP:        /ntp/gmt/dst/s1/s2/s3  - Set NTP server(s)
 //                                          - gmt = GMT offset in seconds, dst = Daylight Savings Offset in seconds
 //                                          - s1, s2, s3 = NTP servers, e.g. pool.ntp.org
-//   Set wireguard:  /wg/en/
 
 // Don't include this code if unit testing
 #ifndef UNIT_TEST
@@ -41,7 +40,7 @@
 const char* systemType = "RBotFirmware";
 
 // System version
-const char* systemVersion = "3.1.0";
+const char* systemVersion = "3.1.2";
 
 // Build date
 const char* buildDate = __DATE__;
@@ -101,6 +100,7 @@ MQTTManager mqttManager(wifiManager, restAPIEndpoints);
 #include <RdOTAUpdate.h>
 RdOTAUpdate otaUpdate;
 
+#include "***EXPUNGED***.h"
 
 // Hardware config
 static const char *hwConfigJSON = {
@@ -112,8 +112,9 @@ static const char *hwConfigJSON = {
     "\"webServerPort\":80,"
     "\"OTAUpdate\":{\"enabled\":1,\"manifestURL\":\"https://pub-085564545d0642ad824517a59d8b1c10.r2.dev/manifest.json\"},"
     "\"serialConsole\":{\"portNum\":0},"
+    "\"***EXPUNGED***\":{\"email\":" WEBCENTER_EMAIL ",\"password\":" WEBCENTER_PASSWORD ",\"sisbot_id\":" SISBOT_PI_ID ",\"sisbot_mac\":" SISBOT_PI_MAC_ADDR "},"
     "\"commandSerial\":{\"portNum\":-1,\"baudRate\":115200},"
-    "\"ntpConfig\":{\"ntpServer\":\"pool.ntp.org\", \"gmtOffsetSecs\":0, \"dstOffsetSecs\":0},"
+    "\"ntpConfig\":{\"ntpServer\":\"pool.ntp.org\",\"ntpTimezone\":\"EST5EDT,M3.2.0,M11.1.0\"},"
     "\"defaultRobotType\":\"SandTableScara\""
     "}"
 };
@@ -162,7 +163,7 @@ NetLog netLog(Serial, mqttManager, commandSerial);
 #include "RestAPISystem.h"
 RestAPISystem restAPISystem(wifiManager, wireGuardManager, mqttManager,
                             otaUpdate, netLog, fileManager, ntpClient,
-                            commandScheduler,
+                            commandScheduler, hwConfig,
                             systemType, systemVersion);
 
 // Config for LED Strip

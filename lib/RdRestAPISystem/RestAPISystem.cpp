@@ -11,12 +11,13 @@ String RestAPISystem::_systemVersion;
 RestAPISystem::RestAPISystem(WiFiManager& wifiManager, WireGuardManager& wireGuardManager, MQTTManager& mqttManager,
             RdOTAUpdate& otaUpdate, NetLog& netLog,
             FileManager& fileManager, NTPClient& ntpClient,
-            CommandScheduler& commandScheduler,
+            CommandScheduler& commandScheduler, ConfigBase& hwConfig,
             const char* systemType, const char* systemVersion) :
             _wifiManager(wifiManager), _wireGuardManager(wireGuardManager), _mqttManager(mqttManager), 
             _otaUpdate(otaUpdate), _netLog(netLog),
             _fileManager(fileManager), _ntpClient(ntpClient),
-            _commandScheduler(commandScheduler)
+            _commandScheduler(commandScheduler),
+            _hwConfig(hwConfig)
 {
     _deviceRestartPending = false;
     _deviceRestartMs = 0;
@@ -136,7 +137,11 @@ void RestAPISystem::setup(RestAPIEndpoints &endpoints)
                             std::placeholders::_1, std::placeholders::_2, 
                             std::placeholders::_3, std::placeholders::_4,
                             std::placeholders::_5));
-
+    
+    //***EXPUNGED***
+    endpoints.addEndpoint("***EXPUNGED***Get", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET, 
+                std::bind(&RestAPISystem::api***EXPUNGED***GetConfig, this, std::placeholders::_1, std::placeholders::_2), 
+                "Get ***EXPUNGED*** settings");
     }
 
 String RestAPISystem::getWifiStatusStr()
@@ -421,6 +426,16 @@ void RestAPISystem::apiWireGuardGetConfig(String &reqStr, String &respStr)
     String configStr;
     _wireGuardManager.getConfig(configStr);
     configStr = "\"wireGuard\":" + configStr;
+    Utils::setJsonBoolResult(respStr, true, configStr.c_str());
+}
+
+void RestAPISystem::api***EXPUNGED***GetConfig(String &reqStr, String &respStr)
+{
+    // Get config
+    String configStr;
+    ConfigBase wcConfig;
+    wcConfig.setConfigData(_hwConfig.getString("***EXPUNGED***", "").c_str());
+    configStr = "\"***EXPUNGED***\":{\"email\":\"" + wcConfig.getString("email", "") + "\",\"password\":\"" + wcConfig.getString("password", "") + "\",\"sisbot_id\":\"" + wcConfig.getString("sisbot_id", "") + "\",\"sisbot_mac\":\"" + wcConfig.getString("sisbot_mac", "") + "\"}";
     Utils::setJsonBoolResult(respStr, true, configStr.c_str());
 }
 

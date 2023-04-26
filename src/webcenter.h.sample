@@ -1,0 +1,10 @@
+#ifndef WEBCENTER_H
+#define WEBCENTER_H
+
+#define WEBCENTER_EMAIL "<***EXPUNGED*** email>"
+#define WEBCENTER_PASSWORD "<***EXPUNGED*** password>"
+
+//ConfigBase doesn't like the colons in mac!
+#define SISBOT_PI_ID "pi_000000000000000"
+#define SISBOT_PI_MAC_ADDR "aabbcc112233"
+#endif

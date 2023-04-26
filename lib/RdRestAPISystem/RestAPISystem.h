@@ -12,6 +12,7 @@
 #include "FileManager.h"
 #include "NTPClient.h"
 #include "CommandScheduler.h"
+#include "ConfigNVS.h"
 
 class RestAPISystem
 {
@@ -34,6 +35,7 @@ private:
     FileManager& _fileManager;
     NTPClient& _ntpClient;
     CommandScheduler& _commandScheduler;
+    ConfigBase& _hwConfig;
     String _systemType;
     static String _systemVersion;
     
@@ -41,7 +43,7 @@ public:
     RestAPISystem(WiFiManager& wifiManager, WireGuardManager& wireGuardManager, MQTTManager& mqttManager,
                 RdOTAUpdate& otaUpdate, NetLog& netLog,
                 FileManager& fileManager, NTPClient& ntpClient,
-                CommandScheduler& commandScheduler,
+                CommandScheduler& commandScheduler, ConfigBase& hwConfig,
                 const char* systemType, const char* systemVersion);
 
     // Setup and status
@@ -84,6 +86,9 @@ public:
     void apiWireGuardGetConfig(String &reqStr, String &respStr);
     void apiPostWireGuard(String &reqStr, String &respStr);
     void apiPostWireGuardBody(String& reqStr, uint8_t *pData, size_t len, size_t index, size_t total);
+
+    // ***EXPUNGED***
+    void api***EXPUNGED***GetConfig(String &reqStr, String &respStr);
 
     // NTP settings
     void apiNTPGetConfig(String &reqStr, String &respStr);
