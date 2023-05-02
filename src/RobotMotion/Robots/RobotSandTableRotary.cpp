@@ -7,9 +7,6 @@
 #include "Utils.h"
 #include "math.h"
 
-//#define DEBUG_SANDTABLE_MOTION 1
-//#define DEBUG_SANDTABLE_CARTESIAN_TO_POLAR 1
-
 static const char* MODULE_PREFIX = "SandTableRotary: ";
 
 // Notes for SandTableRotary
