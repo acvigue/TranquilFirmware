@@ -3,7 +3,7 @@
 
 #include <RdOTAUpdate.h>
 
-#include <esp32fota.hpp>
+#include <esp32fota.h>
 
 static const char *MODULE_PREFIX = "OTAUpdate: ";
 
