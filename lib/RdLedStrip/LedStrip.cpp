@@ -137,6 +137,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
         _ledRealBrightness = 0;
         _effectSpeed = 50;
         _autoDim = false;
+        _autoDimStrength = 15;
         _primaryRedVal = 127;
         _primaryGreenVal = 127;
         _primaryBlueVal = 127;
@@ -158,6 +159,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
         _secRedVal = _ledNvValues.getLong("secRedVal", 127);
         _secGreenVal = _ledNvValues.getLong("secGreenVal", 127);
         _secBlueVal = _ledNvValues.getLong("secBlueVal", 127);
+        _autoDimStrength = _ledNvValues.getLong("autoDimStrength", 15);
         Log.trace("%sLED Setup from JSON\n", MODULE_PREFIX);
     }
     if (_ledIsRGBW) {
@@ -243,6 +245,11 @@ void LedStrip::updateLedFromConfig(const char* pLedJson) {
         _secBlueVal = secBlueVal;
         changed = true;
     }
+    int autoDimStrength = RdJson::getLong("autoDimStrength", 15, pLedJson);
+    if(autoDimStrength != _autoDimStrength) {
+        _autoDimStrength = autoDimStrength;
+        changed = true;
+    }
 
     if (changed) ledConfigChanged = true;
 }
@@ -283,6 +290,8 @@ String LedStrip::getCurrentConfigStr() {
     jsonStr += ",";
     jsonStr += "\"autoDim\":";
     jsonStr += _sensorEnabled == 1 ? (_autoDim ? "1" : "0") : "-1";
+    jsonStr += ",\"autoDimStrength\":";
+    jsonStr += _autoDimStrength;
     jsonStr += "}";
     return jsonStr;
 }
@@ -292,6 +301,10 @@ float LedStrip::getLuxLevel() {
         return _luxLevel;
     }
     return -1;
+}
+
+float mapFloat(float value, float fromLow, float fromHigh, float toLow, float toHigh) {
+  return (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow; 
 }
 
 void LedStrip::service(float currentX, float currentY) {
@@ -343,17 +356,12 @@ void LedStrip::service(float currentX, float currentY) {
 
             if (_autoDim) {
                 byte ledBrightness;
-                if (_luxLevel > 3) {
-                    // high brightness
-                    ledBrightness = 255;
-                } else if (_luxLevel > 0.5) {
-                    // low brightness
-                    ledBrightness = 60;
-                } else if (_luxLevel > 0.02) {
-                    // low brightness
-                    ledBrightness = 10;
-                } else {
+                
+                if (_luxLevel < 0.05) {
+                    // super low brightness
                     ledBrightness = 0;
+                } else {
+                    ledBrightness = (int) mapFloat(_luxLevel, 0.00, _autoDimStrength, 0.00, 255.00);
                 }
 
                 if (_ledBrightness != ledBrightness) {
@@ -421,7 +429,7 @@ void LedStrip::show() {
     if (_ledIsRGBW) {
         convertTempRGBToRGBW();
     } else {
-        for(int i = 0; i < _ledCount; i++) {
+        for (int i = 0; i < _ledCount; i++) {
             _ledsRGBTemp[i].r = gamma8[_ledsRGBTemp[i].r];
             _ledsRGBTemp[i].g = gamma8[_ledsRGBTemp[i].g];
             _ledsRGBTemp[i].b = gamma8[_ledsRGBTemp[i].b];
@@ -472,6 +480,8 @@ void LedStrip::updateNv() {
     jsonStr += ",";
     jsonStr += "\"autoDim\":";
     jsonStr += _sensorEnabled == 1 ? (_autoDim ? "1" : "0") : "-1";
+    jsonStr += ",\"autoDimStrength\":";
+    jsonStr += _autoDimStrength;
     jsonStr += "}";
     _ledNvValues.setConfigData(jsonStr.c_str());
     _ledNvValues.writeConfig();
@@ -547,8 +557,8 @@ void LedStrip::effect_followTheta() {
 
     CRGB headColor = blend(pColor, sColor, blendStrength);
     fill_gradient_RGB(grad, 0, pColor, trail, headColor);
-    for(int i = trail; i < trail + sides; i++) {
-            grad[i] = headColor;
+    for (int i = trail; i < trail + sides; i++) {
+        grad[i] = headColor;
     }
     fill_gradient_RGB(grad, (trail) + sides, headColor, (trail * 2) + (sides * 2), pColor);
 
