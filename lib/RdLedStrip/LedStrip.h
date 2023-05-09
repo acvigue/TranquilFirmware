@@ -42,6 +42,7 @@ class LedStrip {
     int _ledPin;
     int _ledCount;
     int _sensorEnabled;
+    int _autoDimStrength;
     bool _currentGain = 0;
     unsigned int _currentIntegrationMS = 402;
     int _ledAngleOffset;
