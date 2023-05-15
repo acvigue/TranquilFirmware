@@ -86,7 +86,7 @@ void WorkManager::queryStatus(String &respStr) {
         innerJsonStr += _evaluatorFiles.fileName();
 
         if (_evaluatorThetaRhoLine.isBusy()) {
-            innerJsonStr += ",\"filePos\": ";
+            innerJsonStr += "\",\"filePos\": ";
             innerJsonStr += String((_evaluatorFiles.getCurrentFilePosition()) - ((1 - _evaluatorThetaRhoLine.getLineProgress()) * _evaluatorFiles.getCurrentLineLength()));
         } else {
             innerJsonStr += "\",\"filePos\": ";
