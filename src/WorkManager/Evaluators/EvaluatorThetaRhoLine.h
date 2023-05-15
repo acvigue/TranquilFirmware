@@ -27,6 +27,8 @@ public:
     // Call frequently
     void service();
 
+    double getLineProgress();
+
     // Control
     void stop();
 

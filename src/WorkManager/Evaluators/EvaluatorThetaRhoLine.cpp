@@ -69,6 +69,14 @@ bool EvaluatorThetaRhoLine::isValid(WorkItem &workItem)
     return cmdStr.startsWith("_THRLINE");
 }
 
+double EvaluatorThetaRhoLine::getLineProgress() {
+    if(!_isInterpolating) {
+        return 0.50;
+    }
+
+    return (double) (1.00 / (double) _interpolateSteps) * (double) _curStep;
+}
+
 // Process WorkItem
 bool EvaluatorThetaRhoLine::execWorkItem(WorkItem &workItem)
 {

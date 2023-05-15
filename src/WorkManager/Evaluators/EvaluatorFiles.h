@@ -28,6 +28,9 @@ public:
 
     //Current file position
     int getCurrentFilePosition();
+
+    //Current line length
+    int getCurrentLineLength();
     
     // Check valid
     bool isValid(WorkItem& workItem);
@@ -61,6 +64,7 @@ private:
 
     int _fileLen;
     int _filePos;
+    int _chunkLen;
 
     String _fileName;
 

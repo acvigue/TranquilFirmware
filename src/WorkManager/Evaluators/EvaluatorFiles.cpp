@@ -100,6 +100,11 @@ int EvaluatorFiles::getTotalFileLength()
     return _fileLen;
 }
 
+int EvaluatorFiles::getCurrentLineLength()
+{
+    return _chunkLen;
+}
+
 void EvaluatorFiles::service()
 {
     // Check in progress
@@ -128,6 +133,7 @@ void EvaluatorFiles::service()
 
     _fileLen = fileLen;
     _filePos = chunkPos;
+    _chunkLen = chunkLen;
 
     // Check if valid
     if (chunkLen > 0)
