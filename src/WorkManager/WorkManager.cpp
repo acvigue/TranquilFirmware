@@ -12,14 +12,13 @@
 static const char *MODULE_PREFIX = "WorkManager: ";
 
 WorkManager::WorkManager(ConfigBase &mainConfig, ConfigBase &robotConfig, RobotController &robotController, LedStrip &ledStrip,
-                         RestAPISystem &restAPISystem, FileManager &fileManager, CommandScheduler &commandScheduler)
+                         RestAPISystem &restAPISystem, FileManager &fileManager)
     : _systemConfig(mainConfig),
       _robotConfig(robotConfig),
       _robotController(robotController),
       _ledStrip(ledStrip),
       _restAPISystem(restAPISystem),
       _fileManager(fileManager),
-      _commandScheduler(commandScheduler),
       _evaluatorPatterns(fileManager, *this),
       _evaluatorSequences(fileManager, *this),
       _evaluatorFiles(fileManager, *this),
@@ -45,15 +44,7 @@ void WorkManager::queryStatus(String &respStr) {
     String healthStrRobot = cmdArgs.toJSON(false);
     if ((innerJsonStr.length() > 0) && (healthStrRobot.length() > 0)) innerJsonStr += ",";
     innerJsonStr += healthStrRobot;
-    String ledStrip = _ledStrip.getCurrentConfigStr();
-    // Log.trace("%squeryStatus innerJsonLen %d ledStripLen %d ledStrip <%s>\n", MODULE_PREFIX, innerJsonStr.length(), ledStrip.length(),
-    // ledStrip.c_str());
-    if ((innerJsonStr.length() > 0) && (ledStrip.length() > 2)) innerJsonStr += ",";
 
-    String lux = String(_ledStrip.getLuxLevel());
-    innerJsonStr += "\"lux\": " + lux + ",";
-
-    innerJsonStr += ledStrip.substring(1, ledStrip.length() - 1);
     // Time of Day
     String timeJsonStr;
     struct tm timeinfo;
@@ -106,6 +97,8 @@ bool WorkManager::canAcceptWorkItem() { return !_workItemQueue.isFull(); }
 bool WorkManager::queueIsEmpty() { return _workItemQueue.isEmpty(); }
 
 void WorkManager::getRobotConfig(String &respStr) { respStr = _robotConfig.getConfigString(); }
+
+void WorkManager::getLedStripConfig(String &respStr) { respStr = _ledStrip.getCurrentConfigStr(); }
 
 bool WorkManager::setLedStripConfig(const uint8_t *pData, int len) {
     char tmpBuf[len + 1];

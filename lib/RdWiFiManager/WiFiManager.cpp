@@ -8,15 +8,14 @@
 #include <ArduinoLog.h>
 #include <ArduinoOTA.h>
 #include <ESPmDNS.h>
+#include <DNSServer.h>
 #include <WiFi.h>
 
 #include "ConfigNVS.h"
-#include "StatusIndicator.h"
 #include "esp_wpa2.h"
+#include "Utils.h"
 
 static const char *MODULE_PREFIX = "WiFiManager: ";
-
-StatusIndicator *WiFiManager::_pStatusLed = NULL;
 
 String WiFiManager::_hostname;
 
@@ -24,12 +23,11 @@ bool WiFiManager::isEnabled() { return _wifiEnabled; }
 
 String WiFiManager::getHostname() { return _hostname; }
 
-void WiFiManager::setup(ConfigBase &hwConfig, ConfigBase *pSysConfig, const char *defaultHostname, StatusIndicator *pStatusLed) {
+void WiFiManager::setup(ConfigBase &hwConfig, ConfigBase *pSysConfig, const char *defaultHostname) {
     _wifiEnabled = hwConfig.getLong("wifiEnabled", 0) != 0;
     _pConfigBase = pSysConfig;
     _defaultHostname = defaultHostname;
-    _pStatusLed = pStatusLed;
-    _connectionMode = pSysConfig->getLong("WiFiMode", 1);
+    _connectionMode = pSysConfig->getLong("WiFiMode", 3);
 
     // Get the SSID, password and hostname if available
     _ssid = pSysConfig->getString("WiFiSSID", "");
@@ -44,6 +42,9 @@ void WiFiManager::setup(ConfigBase &hwConfig, ConfigBase *pSysConfig, const char
         WiFi.onEvent(wiFiEventHandler);
         // Set the mode to STA
         WiFi.mode(WIFI_STA);
+
+        //Erase pre-existing credentials
+        WiFi.disconnect(false, true);
 
         // If using PEAP, initialize.
         if (_connectionMode == connectionType::peap) {
@@ -73,11 +74,28 @@ void WiFiManager::service() {
         }
     }
 
+    if(_softAPStarted) {
+        _dnsServer.processNextRequest();
+    }
+
     // Check for reconnect required
     if (WiFi.status() != WL_CONNECTED) {
         if (Utils::isTimeout(millis(), _lastWifiBeginAttemptMs,
                              _wifiFirstBeginDone ? TIME_BETWEEN_WIFI_BEGIN_ATTEMPTS_MS : TIME_BEFORE_FIRST_BEGIN_MS)) {
-            Log.notice("%snotConn WiFi.begin SSID %s\n", MODULE_PREFIX, _ssid.c_str());
+            Log.notice("%snotConn WiFi.begin SSID %s attempt %d\n", MODULE_PREFIX, _ssid.c_str(), _connectAttempts);
+            _connectAttempts++;
+
+            if(_connectAttempts > 2) {
+                //Force the softAP to start whenever we can't connect for over 2 minutes
+                _connectionMode = connectionType::none;
+            }
+
+            if(_connectionMode != connectionType::none && _softAPStarted) {
+                Log.notice("%sstopping softap (%s)\n", MODULE_PREFIX, _hostname.c_str());
+                WiFi.mode(WIFI_STA);
+                _dnsServer.stop();
+            }
+
             if (_connectionMode == connectionType::psk) {
                 WiFi.begin(_ssid.c_str(), _password.c_str());
             } else if (_connectionMode == connectionType::open) {
@@ -85,12 +103,24 @@ void WiFiManager::service() {
             } else if (_connectionMode == connectionType::peap) {
                 // EAP was initialized earlier!
                 WiFi.begin(_ssid.c_str());
+            } else if (_connectionMode == connectionType::none && !_softAPStarted) {
+                //Start SoftAP
+                Log.notice("%sstarting softap (%s)\n", MODULE_PREFIX, _hostname.c_str());
+                WiFi.disconnect(false, true);
+                WiFi.mode(WIFI_AP);
+                WiFi.softAP(_hostname.c_str());
+                WiFi.softAPConfig(_apIP, _apIP, IPAddress(255, 255, 255, 0));
+                _dnsServer.start(53, "*", _apIP);
+                Log.notice("%s softap ip: %s\n", MODULE_PREFIX, WiFi.softAPIP().toString());
+                _softAPStarted = true;
             }
+            
             WiFi.setHostname(_hostname.c_str());
             _lastWifiBeginAttemptMs = millis();
             _wifiFirstBeginDone = true;
         }
     } else {
+        _connectAttempts = 0;
         if (!_otaSetup) {
             ArduinoOTA.setHostname(_hostname.c_str());
             ArduinoOTA.setMdnsEnabled(true);
@@ -104,7 +134,7 @@ void WiFiManager::service() {
     }
 }
 
-bool WiFiManager::isConnected() { return (WiFi.status() == WL_CONNECTED); }
+bool WiFiManager::isConnected() { return (WiFi.status() == WL_CONNECTED || _softAPStarted); }
 
 String WiFiManager::formConfigStr() {
     return "{\"WiFiMode\":" + String(_connectionMode) + ",\"WiFiSSID\":\"" + _ssid + "\",\"WiFiPW\":\"" + _password + "\",\"WiFiPEAPIdentity\":\"" +
@@ -112,81 +142,32 @@ String WiFiManager::formConfigStr() {
            _hostname + "\"}";
 }
 
-void WiFiManager::setCredentialsPSK(String &ssid, String &pw, String &hostname, bool resetToImplement) {
-    // Set credentials
-    _ssid = ssid;
-    _password = pw;
-    _connectionMode = connectionType::psk;
-    if (hostname.length() == 0)
-        Log.trace("%shostname not set, staying with %s\n", MODULE_PREFIX, _hostname.c_str());
-    else
-        _hostname = hostname;
+void WiFiManager::setConfig(const char *configJson) {
+    // Save config
     if (_pConfigBase) {
-        _pConfigBase->setConfigData(formConfigStr().c_str());
+        _pConfigBase->setConfigData(configJson);
         _pConfigBase->writeConfig();
+        Log.trace("%setConfig %s\n", MODULE_PREFIX, _pConfigBase->getConfigCStrPtr());
     }
 
-    // Check if reset required
-    if (resetToImplement) {
-        Log.trace("%ssetCredentials ... Reset pending\n", MODULE_PREFIX);
-        _deviceRestartPending = true;
-        _deviceRestartMs = millis();
-    }
+    _deviceRestartPending = true;
 }
 
-void WiFiManager::setCredentialsPEAP(String &ssid, String &identity, String &username, String &password, String &hostname, bool resetToImplement) {
-    // Set credentials
-    _ssid = ssid;
-    _peapIdentity = identity;
-    _peapUsername = username;
-    _peapPassword = password;
-    _connectionMode = connectionType::peap;
-    if (hostname.length() == 0)
-        Log.trace("%shostname not set, staying with %s\n", MODULE_PREFIX, _hostname.c_str());
-    else
-        _hostname = hostname;
-    if (_pConfigBase) {
-        _pConfigBase->setConfigData(formConfigStr().c_str());
-        _pConfigBase->writeConfig();
-    }
+void WiFiManager::setConfig(uint8_t *pData, int len) {
+    if (!_pConfigBase) return;
+    if (len >= _pConfigBase->getMaxLen()) return;
+    char *pTmp = new char[len + 1];
+    if (!pTmp) return;
+    memcpy(pTmp, pData, len);
+    pTmp[len] = 0;
 
-    // Check if reset required
-    if (resetToImplement) {
-        Log.trace("%ssetCredentials ... Reset pending\n", MODULE_PREFIX);
-        _deviceRestartPending = true;
-        _deviceRestartMs = millis();
-    }
+    setConfig(pTmp);
+    delete[] pTmp;
 }
 
-void WiFiManager::setCredentialsOPEN(String &ssid, String &hostname, bool resetToImplement) {
-    // Set credentials
-    _ssid = ssid;
-    _connectionMode = connectionType::open;
-    if (hostname.length() == 0)
-        Log.trace("%shostname not set, staying with %s\n", MODULE_PREFIX, _hostname.c_str());
-    else
-        _hostname = hostname;
-    if (_pConfigBase) {
-        _pConfigBase->setConfigData(formConfigStr().c_str());
-        _pConfigBase->writeConfig();
-    }
-
-    // Check if reset required
-    if (resetToImplement) {
-        Log.trace("%ssetCredentials ... Reset pending\n", MODULE_PREFIX);
-        _deviceRestartPending = true;
-        _deviceRestartMs = millis();
-    }
-}
-
-void WiFiManager::clearCredentials() {
-    _ssid = "";
-    _password = "";
-    _hostname = _defaultHostname;
-    if (_pConfigBase) {
-        _pConfigBase->setConfigData(formConfigStr().c_str());
-        _pConfigBase->writeConfig();
-    }
+void WiFiManager::getConfig(String& config) {
+    config = "{}";
+    if (_pConfigBase) config = _pConfigBase->getConfigString();
 }
 
 void WiFiManager::wiFiEventHandler(WiFiEvent_t event) {
@@ -194,7 +175,6 @@ void WiFiManager::wiFiEventHandler(WiFiEvent_t event) {
     switch (event) {
         case SYSTEM_EVENT_STA_GOT_IP:
             Log.notice("%sGotIP %s\n", MODULE_PREFIX, WiFi.localIP().toString().c_str());
-            if (_pStatusLed) _pStatusLed->setCode(1);
             //
             // Set up mDNS responder:
             // - first argument is the domain name, in this example
@@ -214,7 +194,6 @@ void WiFiManager::wiFiEventHandler(WiFiEvent_t event) {
         case SYSTEM_EVENT_STA_DISCONNECTED:
             Log.notice("%sDisconnected\n", MODULE_PREFIX);
             WiFi.reconnect();
-            if (_pStatusLed) _pStatusLed->setCode(0);
             break;
         default:
             // INFO: Default = do nothing

@@ -23,9 +23,9 @@ public:
     void setup(ConfigBase* pDefaultConfig, const char* configName, ConfigBase* pConfig);
     void service();
     void getConfig(String& config);
-    void setConfig(const char* timezone, const char* server);
+    void setConfig(const char *configJson);
+    void setConfig(uint8_t *pData, int len);
 
 private:
-    void configChanged();
     void applySetup();
 };

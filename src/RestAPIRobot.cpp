@@ -37,7 +37,16 @@ void RestAPIRobot::apiPostSettings(String &reqStr, String &respStr)
     Utils::setJsonBoolResult(respStr, true);      
 }
 
-void RestAPIRobot::apiSetLed(String &reqStr, String &respStr)
+void RestAPIRobot::apiGetLEDConfig(String &reqStr, String &respStr)
+{
+    Log.verbose("%sGetLEDConfig %s\n", MODULE_PREFIX, respStr.c_str());
+    String configStr;
+    _workManager.getLedStripConfig(configStr);
+    configStr = "\"led\":" + configStr;
+    Utils::setJsonBoolResult(respStr, true, configStr.c_str());
+}
+
+void RestAPIRobot::apiPostLEDConfig(String &reqStr, String &respStr)
 {
     Log.notice("%sSetLed %s\n", MODULE_PREFIX, reqStr.c_str());
     // Result
@@ -51,7 +60,7 @@ void RestAPIRobot::apiPostSettingsBody(String& reqStr, uint8_t *pData, size_t le
     _workManager.setRobotConfig(pData, len);
 }
 
-void RestAPIRobot::apiSetLedBody(String& reqStr, uint8_t *pData, size_t len, size_t index, size_t total)
+void RestAPIRobot::apiPostLEDConfigBody(String& reqStr, uint8_t *pData, size_t len, size_t index, size_t total)
 {
     Log.notice("%sSetLedBody len %d, %s\n", MODULE_PREFIX, len, reqStr.c_str());
     // Store the settings
@@ -85,7 +94,7 @@ void RestAPIRobot::setup(RestAPIEndpoints &endpoints)
                             "Get config for a robot type");
 
     // Set robot settings
-    endpoints.addEndpoint("postsettings", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_POST,
+    endpoints.addEndpoint("settings/robot", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_POST,
                             std::bind(&RestAPIRobot::apiPostSettings, this, std::placeholders::_1, std::placeholders::_2),
                             "Set settings for robot", "application/json", NULL, true, NULL, 
                             std::bind(&RestAPIRobot::apiPostSettingsBody, this, 
@@ -94,7 +103,7 @@ void RestAPIRobot::setup(RestAPIEndpoints &endpoints)
                             std::placeholders::_5));
 
     // Get robot settings
-    endpoints.addEndpoint("getsettings", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
+    endpoints.addEndpoint("settings/robot", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
                             std::bind(&RestAPIRobot::apiGetSettings, this, std::placeholders::_1, std::placeholders::_2),
                             "Get settings for robot");
 
@@ -113,11 +122,14 @@ void RestAPIRobot::setup(RestAPIEndpoints &endpoints)
                             std::bind(&RestAPIRobot::apiQueryStatus, this, std::placeholders::_1, std::placeholders::_2),
                             "Query status");
                             
-    // Set LED Strip
-    endpoints.addEndpoint("setled", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_POST,
-                            std::bind(&RestAPIRobot::apiSetLed, this, std::placeholders::_1, std::placeholders::_2),
+    //LED Strip
+    endpoints.addEndpoint("settings/led", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
+                            std::bind(&RestAPIRobot::apiGetLEDConfig, this, std::placeholders::_1, std::placeholders::_2),
+                            "Get LED strip settings");
+    endpoints.addEndpoint("settings/led", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_POST,
+                            std::bind(&RestAPIRobot::apiPostLEDConfig, this, std::placeholders::_1, std::placeholders::_2),
                             "Set LED Strip Settings", "application/json", NULL, true, NULL, 
-                            std::bind(&RestAPIRobot::apiSetLedBody, this, 
+                            std::bind(&RestAPIRobot::apiPostLEDConfigBody, this, 
                             std::placeholders::_1, std::placeholders::_2, 
                             std::placeholders::_3, std::placeholders::_4,
                             std::placeholders::_5));

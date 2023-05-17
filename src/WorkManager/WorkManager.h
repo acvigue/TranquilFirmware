@@ -6,24 +6,23 @@
 // #define DEBUG_WORK_ITEM_SERVICE 1
 
 #include <Arduino.h>
-#include "LedStrip.h"
-#include "WorkItemQueue.h"
+
+#include "Evaluators/EvaluatorFiles.h"
 #include "Evaluators/EvaluatorPatterns.h"
 #include "Evaluators/EvaluatorSequences.h"
-#include "Evaluators/EvaluatorFiles.h"
 #include "Evaluators/EvaluatorThetaRhoLine.h"
+#include "LedStrip.h"
 #include "RobotCommandArgs.h"
+#include "WorkItemQueue.h"
 
 class ConfigBase;
 class RobotController;
 class RestAPISystem;
 class FileManager;
-class CommandScheduler;
 
 // Work Manager - handles all workflow for the robot
-class WorkManager
-{
-private:
+class WorkManager {
+   private:
     ConfigBase& _systemConfig;
     ConfigBase& _robotConfig;
     RobotController& _robotController;
@@ -31,7 +30,6 @@ private:
     WorkItemQueue _workItemQueue;
     RestAPISystem& _restAPISystem;
     FileManager& _fileManager;
-    CommandScheduler& _commandScheduler;
 
     // Evaluators
     EvaluatorPatterns _evaluatorPatterns;
@@ -55,14 +53,9 @@ private:
     static const uint32_t DEBUG_BETWEEN_WORK_ITEM_SERVICES_MS = 100;
 #endif
 
-public:
-    WorkManager(ConfigBase& mainConfig,
-                ConfigBase &robotConfig, 
-                RobotController &robotController,
-                LedStrip &ledStrip,
-                RestAPISystem &restAPISystem,
-                FileManager& fileManager,
-                CommandScheduler& commandScheduler);
+   public:
+    WorkManager(ConfigBase& mainConfig, ConfigBase& robotConfig, RobotController& robotController, LedStrip& ledStrip, RestAPISystem& restAPISystem,
+                FileManager& fileManager);
 
     // Check if queue can accept a work item
     bool canAcceptWorkItem();
@@ -75,6 +68,7 @@ public:
 
     // Configuration of the robot
     void getRobotConfig(String& respStr);
+    void getLedStripConfig(String& respStr);
     bool setRobotConfig(const uint8_t* pData, int len);
     bool setLedStripConfig(const uint8_t* pData, int len);
 
@@ -85,10 +79,10 @@ public:
     void handleStartupCommands();
 
     // Get status report
-    void queryStatus(String &respStr);
+    void queryStatus(String& respStr);
 
     // Add a work item to the queue
-    void addWorkItem(WorkItem& workItem, String &retStr, int cmdIdx = -1);
+    void addWorkItem(WorkItem& workItem, String& retStr, int cmdIdx = -1);
 
     // Check status changed
     bool checkStatusChanged();
@@ -96,12 +90,12 @@ public:
     // Get debug string
     String getDebugStr();
 
-private:
+   private:
     // Execute an item of work
     bool execWorkItem(WorkItem& workItem);
 
-    // Process a single 
-    void processSingle(const char *pCmdStr, String &retStr);
+    // Process a single
+    void processSingle(const char* pCmdStr, String& retStr);
 
     // Stop Evaluators
     void evaluatorsStop();
