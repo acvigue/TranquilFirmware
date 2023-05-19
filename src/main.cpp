@@ -92,8 +92,6 @@ WebServer webServer;
 #include <RdOTAUpdate.h>
 RdOTAUpdate otaUpdate;
 
-#include "***EXPUNGED***.h"
-
 // Hardware config
 static const char* hwConfigJSON = {
     "{"
@@ -103,9 +101,6 @@ static const char* hwConfigJSON = {
     "\"webServerEnabled\":1,"
     "\"webServerPort\":80,"
     "\"OTAUpdate\":{\"enabled\":1,\"manifestURL\":\"https://pub-085564545d0642ad824517a59d8b1c10.r2.dev/manifest.json\"},"
-    "\"***EXPUNGED***\":{\"email\":" WEBCENTER_EMAIL ",\"password\":" WEBCENTER_PASSWORD ",\"sisbot_id\":" SISBOT_PI_ID
-    ",\"sisbot_mac\":" SISBOT_PI_MAC_ADDR
-    "},"
     "\"ntpConfig\":{\"ntpServer\":\"pool.ntp.org\",\"ntpTimezone\":\"EST5EDT,M3.2.0,M11.1.0\"},"
     "\"defaultRobotType\":\"SandTableScara\""
     "}"};
@@ -125,9 +120,12 @@ ConfigNVS wireGuardConfig("wireguard", 400);
 // Config for NTP
 ConfigNVS ntpConfig("ntp", 100);
 
+// Config for ***EXPUNGED***
+ConfigNVS ***EXPUNGED***Config("***EXPUNGED***", 600);
+
 // REST API System
 #include "RestAPISystem.h"
-RestAPISystem restAPISystem(wifiManager, wireGuardManager, otaUpdate, fileManager, ntpClient, hwConfig, systemType, systemVersion);
+RestAPISystem restAPISystem(wifiManager, wireGuardManager, otaUpdate, fileManager, ntpClient, hwConfig, ***EXPUNGED***Config, systemType, systemVersion);
 
 // Config for LED Strip
 ConfigNVS ledStripConfig("ledStrip", 200);
@@ -183,6 +181,9 @@ void setup() {
 
     // NTP Config
     ntpConfig.setup();
+
+    // ***EXPUNGED*** config
+    ***EXPUNGED***Config.setup();
 
     // WiFi Manager
     wifiManager.setup(hwConfig, &wifiConfig, systemType);

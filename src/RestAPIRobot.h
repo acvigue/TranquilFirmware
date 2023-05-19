@@ -13,6 +13,7 @@ class RestAPIRobot
   private:
     WorkManager &_workManager;
     FileManager& _fileManager;
+    uint8_t _tmpReqBodyBuf[2000];
 
   public:
     RestAPIRobot(WorkManager &commandInterface, FileManager& fileManager) :

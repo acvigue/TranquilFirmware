@@ -56,8 +56,17 @@ void RestAPIRobot::apiPostLEDConfig(String &reqStr, String &respStr)
 void RestAPIRobot::apiPostSettingsBody(String& reqStr, uint8_t *pData, size_t len, size_t index, size_t total)
 {
     Log.notice("%sPostSettingsBody len %d\n", MODULE_PREFIX, len);
-    // Store the settings
-    _workManager.setRobotConfig(pData, len);
+
+    if (index == 0) {
+        memset(_tmpReqBodyBuf, 0, 2000);
+    }
+
+    memcpy(_tmpReqBodyBuf + index, pData, len);
+
+    if (index + len >= total) {
+        // Store the settings
+        _workManager.setRobotConfig(_tmpReqBodyBuf, total);
+    }
 }
 
 void RestAPIRobot::apiPostLEDConfigBody(String& reqStr, uint8_t *pData, size_t len, size_t index, size_t total)

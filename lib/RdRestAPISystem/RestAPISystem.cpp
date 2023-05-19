@@ -9,15 +9,16 @@ static const char *MODULE_PREFIX = "RestAPISystem: ";
 
 String RestAPISystem::_systemVersion;
 
-RestAPISystem::RestAPISystem(WiFiManager &wifiManager, WireGuardManager &wireGuardManager, RdOTAUpdate &otaUpdate,
-                              FileManager &fileManager, NTPClient &ntpClient, ConfigBase &hwConfig,
-                             const char *systemType, const char *systemVersion)
+RestAPISystem::RestAPISystem(WiFiManager &wifiManager, WireGuardManager &wireGuardManager, RdOTAUpdate &otaUpdate, FileManager &fileManager,
+                             NTPClient &ntpClient, ConfigBase &hwConfig, ConfigBase &***EXPUNGED***Config, const char *systemType,
+                             const char *systemVersion)
     : _wifiManager(wifiManager),
       _wireGuardManager(wireGuardManager),
       _otaUpdate(otaUpdate),
       _fileManager(fileManager),
       _ntpClient(ntpClient),
-      _hwConfig(hwConfig) {
+      _hwConfig(hwConfig),
+      _***EXPUNGED***Config(***EXPUNGED***Config) {
     _deviceRestartPending = false;
     _deviceRestartMs = 0;
     _updateCheckPending = false;
@@ -67,15 +68,20 @@ void RestAPISystem::setup(RestAPIEndpoints &endpoints) {
                           std::bind(&RestAPISystem::apiGetWireGuardConfig, this, std::placeholders::_1, std::placeholders::_2),
                           "Get WireGuard configuration");
     endpoints.addEndpoint("settings/wireguard", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_POST,
-                          std::bind(&RestAPISystem::apiPostWireGuardConfig, this, std::placeholders::_1, std::placeholders::_2), "Set WireGuard configuration",
-                          "application/json", NULL, true, NULL,
-                          std::bind(&RestAPISystem::apiPostWireGuardConfigBody, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
-                                    std::placeholders::_4, std::placeholders::_5));
+                          std::bind(&RestAPISystem::apiPostWireGuardConfig, this, std::placeholders::_1, std::placeholders::_2),
+                          "Set WireGuard configuration", "application/json", NULL, true, NULL,
+                          std::bind(&RestAPISystem::apiPostWireGuardConfigBody, this, std::placeholders::_1, std::placeholders::_2,
+                                    std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 
     // ***EXPUNGED*** settings
     endpoints.addEndpoint("settings/***EXPUNGED***", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
                           std::bind(&RestAPISystem::apiGet***EXPUNGED***Config, this, std::placeholders::_1, std::placeholders::_2),
-                          "Get ***EXPUNGED*** configuration");
+                          "Get WireGuard configuration");
+    endpoints.addEndpoint("settings/***EXPUNGED***", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_POST,
+                          std::bind(&RestAPISystem::apiPost***EXPUNGED***Config, this, std::placeholders::_1, std::placeholders::_2),
+                          "Set WireGuard configuration", "application/json", NULL, true, NULL,
+                          std::bind(&RestAPISystem::apiPost***EXPUNGED***ConfigBody, this, std::placeholders::_1, std::placeholders::_2,
+                                    std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 }
 
 String RestAPISystem::getWifiStatusStr() {
@@ -140,7 +146,7 @@ void RestAPISystem::apiReset(String &reqStr, String &respStr) {
     _deviceRestartMs = millis();
 }
 
-//MARK: WiFi
+// MARK: WiFi
 void RestAPISystem::apiGetWiFiConfig(String &reqStr, String &respStr) {
     // Get config
     String configStr;
@@ -157,11 +163,20 @@ void RestAPISystem::apiPostWiFiConfig(String &reqStr, String &respStr) {
 
 void RestAPISystem::apiPostWiFiConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total) {
     Log.notice("%sPostWiFiBody len %d\n", MODULE_PREFIX, len);
-    // Store the settings
-    _wifiManager.setConfig(pData, len);
+
+    if (index == 0) {
+        memset(_tmpReqBodyBuf, 0, 600);
+    }
+
+    memcpy(_tmpReqBodyBuf + index, pData, len);
+
+    if (index + len >= total) {
+        // Store the settings
+        _wifiManager.setConfig(_tmpReqBodyBuf, total);
+    }
 }
 
-//MARK: Wireguard
+// MARK: Wireguard
 void RestAPISystem::apiGetWireGuardConfig(String &reqStr, String &respStr) {
     // Get config
     String configStr;
@@ -178,11 +193,20 @@ void RestAPISystem::apiPostWireGuardConfig(String &reqStr, String &respStr) {
 
 void RestAPISystem::apiPostWireGuardConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total) {
     Log.notice("%sPostWireGuardBody len %d\n", MODULE_PREFIX, len);
-    // Store the settings
-    _wireGuardManager.setConfig(pData, len);
+
+    if (index == 0) {
+        memset(_tmpReqBodyBuf, 0, 600);
+    }
+
+    memcpy(_tmpReqBodyBuf + index, pData, len);
+
+    if (index + len >= total) {
+        // Store the settings
+        _wireGuardManager.setConfig(_tmpReqBodyBuf, total);
+    }
 }
 
-//MARK: NTP
+// MARK: NTP
 void RestAPISystem::apiGetNTPConfig(String &reqStr, String &respStr) {
     // Get NTP config
     String configStr;
@@ -199,19 +223,59 @@ void RestAPISystem::apiPostNTPConfig(String &reqStr, String &respStr) {
 
 void RestAPISystem::apiPostNTPConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total) {
     Log.notice("%sPostNTPConfigBody len %d\n", MODULE_PREFIX, len);
-    // Store the settings
-    _ntpClient.setConfig(pData, len);
+
+    if (index == 0) {
+        memset(_tmpReqBodyBuf, 0, 600);
+    }
+
+    memcpy(_tmpReqBodyBuf + index, pData, len);
+
+    if (index + len >= total) {
+        // Store the settings
+        _ntpClient.setConfig(_tmpReqBodyBuf, total);
+    }
 }
 
-//MARK: ***EXPUNGED***
+// MARK: ***EXPUNGED***
 void RestAPISystem::apiGet***EXPUNGED***Config(String &reqStr, String &respStr) {
     // Get config
     String configStr;
-    ConfigBase wcConfig;
-    wcConfig.setConfigData(_hwConfig.getString("***EXPUNGED***", "").c_str());
-    configStr = "\"***EXPUNGED***\":{\"email\":\"" + wcConfig.getString("email", "") + "\",\"password\":\"" + wcConfig.getString("password", "") +
-                "\",\"sisbot_id\":\"" + wcConfig.getString("sisbot_id", "") + "\",\"sisbot_mac\":\"" + wcConfig.getString("sisbot_mac", "") + "\"}";
+    String innerStr = "{}";
+
+    if (_***EXPUNGED***Config.getConfigString().length() > 0) {
+        innerStr = _***EXPUNGED***Config.getConfigString();
+    }
+
+    configStr = "\"***EXPUNGED***\":" + innerStr;
     Utils::setJsonBoolResult(respStr, true, configStr.c_str());
+}
+
+void RestAPISystem::apiPost***EXPUNGED***Config(String &reqStr, String &respStr) {
+    Log.notice("%sPost***EXPUNGED***Config %s\n", MODULE_PREFIX, reqStr.c_str());
+    // Result
+    Utils::setJsonBoolResult(respStr, true);
+}
+
+void RestAPISystem::apiPost***EXPUNGED***ConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total) {
+    Log.notice("%sPost***EXPUNGED***ConfigBody len %d\n", MODULE_PREFIX, len);
+
+    if (index == 0) {
+        memset(_tmpReqBodyBuf, 0, 600);
+    }
+
+    memcpy(_tmpReqBodyBuf + index, pData, len);
+
+    if (index + len >= total) {
+        // Store the settings
+        if (total >= _***EXPUNGED***Config.getMaxLen()) return;
+        char *pTmp = new char[total + 1];
+        if (!pTmp) return;
+        memcpy(pTmp, _tmpReqBodyBuf, total);
+        pTmp[total] = 0;
+
+        _***EXPUNGED***Config.setConfigData(pTmp);
+        _***EXPUNGED***Config.writeConfig();
+    }
 }
 
 void RestAPISystem::apiCheckUpdate(String &reqStr, String &respStr) {

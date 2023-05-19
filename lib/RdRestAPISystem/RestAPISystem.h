@@ -19,6 +19,8 @@ class RestAPISystem {
     static const int DEVICE_RESTART_DELAY_MS = 1000;
     bool _updateCheckPending;
     unsigned long _updateCheckMs;
+    uint8_t _tmpReqBodyBuf[600];
+
     // Delay before starting an update check
     // For some reason TCP connect fails if there is not a sufficient delay
     // But only when initiated from MQTT (web works ok)
@@ -30,12 +32,13 @@ class RestAPISystem {
     FileManager &_fileManager;
     NTPClient &_ntpClient;
     ConfigBase &_hwConfig;
+    ConfigBase &_***EXPUNGED***Config;
     String _systemType;
     static String _systemVersion;
 
    public:
     RestAPISystem(WiFiManager &wifiManager, WireGuardManager &wireGuardManager, RdOTAUpdate &otaUpdate, FileManager &fileManager,
-                  NTPClient &ntpClient, ConfigBase &hwConfig, const char *systemType, const char *systemVersion);
+                  NTPClient &ntpClient, ConfigBase &hwConfig, ConfigBase &***EXPUNGED***Config, const char *systemType, const char *systemVersion);
 
     // Setup and status
     void setup(RestAPIEndpoints &endpoints);
@@ -65,6 +68,8 @@ class RestAPISystem {
 
     // ***EXPUNGED*** settings (readonly!)
     void apiGet***EXPUNGED***Config(String &reqStr, String &respStr);
+    void apiPost***EXPUNGED***Config(String &reqStr, String &respStr);
+    void apiPost***EXPUNGED***ConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total);
 
     // NTP settings
     void apiGetNTPConfig(String &reqStr, String &respStr);
