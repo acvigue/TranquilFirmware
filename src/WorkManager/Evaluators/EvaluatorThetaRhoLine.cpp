@@ -83,7 +83,7 @@ bool EvaluatorThetaRhoLine::execWorkItem(WorkItem &workItem)
     // Extract the details
     String thetaStr = Utils::getNthField(workItem.getCString(), 1, '/');
     String rhoStr = Utils::getNthField(workItem.getCString(), 2, '/');
-    double newTheta = atof(thetaStr.c_str());
+    double newTheta = atof(thetaStr.c_str()) + (M_PI * 1.5);
     double newRho = atof(rhoStr.c_str());
 #ifdef THETA_RHO_DEBUG
     Log.trace("%sexecWorkItem %s\n", MODULE_PREFIX,
