@@ -10,7 +10,7 @@ static const char *MODULE_PREFIX = "RestAPISystem: ";
 String RestAPISystem::_systemVersion;
 
 RestAPISystem::RestAPISystem(WiFiManager &wifiManager, WireGuardManager &wireGuardManager, RdOTAUpdate &otaUpdate, FileManager &fileManager,
-                             NTPClient &ntpClient, ConfigBase &hwConfig, ConfigBase &***EXPUNGED***Config, const char *systemType,
+                             NTPClient &ntpClient, ConfigBase &hwConfig, ConfigBase &tranquilConfig, const char *systemType,
                              const char *systemVersion)
     : _wifiManager(wifiManager),
       _wireGuardManager(wireGuardManager),
@@ -18,7 +18,7 @@ RestAPISystem::RestAPISystem(WiFiManager &wifiManager, WireGuardManager &wireGua
       _fileManager(fileManager),
       _ntpClient(ntpClient),
       _hwConfig(hwConfig),
-      _***EXPUNGED***Config(***EXPUNGED***Config) {
+      _tranquilConfig(tranquilConfig) {
     _deviceRestartPending = false;
     _deviceRestartMs = 0;
     _updateCheckPending = false;
@@ -73,14 +73,14 @@ void RestAPISystem::setup(RestAPIEndpoints &endpoints) {
                           std::bind(&RestAPISystem::apiPostWireGuardConfigBody, this, std::placeholders::_1, std::placeholders::_2,
                                     std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 
-    // ***EXPUNGED*** settings
-    endpoints.addEndpoint("settings/***EXPUNGED***", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
-                          std::bind(&RestAPISystem::apiGet***EXPUNGED***Config, this, std::placeholders::_1, std::placeholders::_2),
-                          "Get WireGuard configuration");
-    endpoints.addEndpoint("settings/***EXPUNGED***", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_POST,
-                          std::bind(&RestAPISystem::apiPost***EXPUNGED***Config, this, std::placeholders::_1, std::placeholders::_2),
-                          "Set WireGuard configuration", "application/json", NULL, true, NULL,
-                          std::bind(&RestAPISystem::apiPost***EXPUNGED***ConfigBody, this, std::placeholders::_1, std::placeholders::_2,
+    //Tranquil API settings
+    endpoints.addEndpoint("settings/tranquil", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
+                          std::bind(&RestAPISystem::apiGetTranquilConfig, this, std::placeholders::_1, std::placeholders::_2),
+                          "Get Tranquil configuration");
+    endpoints.addEndpoint("settings/tranquil", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_POST,
+                          std::bind(&RestAPISystem::apiPostTranquilConfig, this, std::placeholders::_1, std::placeholders::_2),
+                          "Set Tranquil configuration", "application/json", NULL, true, NULL,
+                          std::bind(&RestAPISystem::apiPostTranquilConfigBody, this, std::placeholders::_1, std::placeholders::_2,
                                     std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 }
 
@@ -236,28 +236,28 @@ void RestAPISystem::apiPostNTPConfigBody(String &reqStr, uint8_t *pData, size_t 
     }
 }
 
-// MARK: ***EXPUNGED***
-void RestAPISystem::apiGet***EXPUNGED***Config(String &reqStr, String &respStr) {
+// MARK: Tranquil
+void RestAPISystem::apiGetTranquilConfig(String &reqStr, String &respStr) {
     // Get config
     String configStr;
     String innerStr = "{}";
 
-    if (_***EXPUNGED***Config.getConfigString().length() > 0) {
-        innerStr = _***EXPUNGED***Config.getConfigString();
+    if (_tranquilConfig.getConfigString().length() > 0) {
+        innerStr = _tranquilConfig.getConfigString();
     }
 
-    configStr = "\"***EXPUNGED***\":" + innerStr;
+    configStr = "\"tranquil\":" + innerStr;
     Utils::setJsonBoolResult(respStr, true, configStr.c_str());
 }
 
-void RestAPISystem::apiPost***EXPUNGED***Config(String &reqStr, String &respStr) {
-    Log.notice("%sPost***EXPUNGED***Config %s\n", MODULE_PREFIX, reqStr.c_str());
+void RestAPISystem::apiPostTranquilConfig(String &reqStr, String &respStr) {
+    Log.notice("%sPostTranquilConfig %s\n", MODULE_PREFIX, reqStr.c_str());
     // Result
     Utils::setJsonBoolResult(respStr, true);
 }
 
-void RestAPISystem::apiPost***EXPUNGED***ConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total) {
-    Log.notice("%sPost***EXPUNGED***ConfigBody len %d\n", MODULE_PREFIX, len);
+void RestAPISystem::apiPostTranquilConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total) {
+    Log.notice("%sPostTranquilConfigBody len %d\n", MODULE_PREFIX, len);
 
     if (index == 0) {
         memset(_tmpReqBodyBuf, 0, 600);
@@ -267,14 +267,14 @@ void RestAPISystem::apiPost***EXPUNGED***ConfigBody(String &reqStr, uint8_t *pDa
 
     if (index + len >= total) {
         // Store the settings
-        if (total >= _***EXPUNGED***Config.getMaxLen()) return;
+        if (total >= _tranquilConfig.getMaxLen()) return;
         char *pTmp = new char[total + 1];
         if (!pTmp) return;
         memcpy(pTmp, _tmpReqBodyBuf, total);
         pTmp[total] = 0;
 
-        _***EXPUNGED***Config.setConfigData(pTmp);
-        _***EXPUNGED***Config.writeConfig();
+        _tranquilConfig.setConfigData(pTmp);
+        _tranquilConfig.writeConfig();
     }
 }
 

@@ -36,8 +36,8 @@
 #ifndef UNIT_TEST
 
 // System type - this is duplicated here to make it easier for automated updater which parses the systemName = "aaaa" line
-#define SYSTEM_TYPE_NAME "RBotFirmware"
-const char* systemType = "RBotFirmware";
+#define SYSTEM_TYPE_NAME "Tranquil"
+const char* systemType = "Tranquil";
 
 // System version
 const char* systemVersion = "4.0.0";
@@ -120,12 +120,12 @@ ConfigNVS wireGuardConfig("wireguard", 400);
 // Config for NTP
 ConfigNVS ntpConfig("ntp", 100);
 
-// Config for ***EXPUNGED***
-ConfigNVS ***EXPUNGED***Config("***EXPUNGED***", 600);
+// Config for Tranquil API
+ConfigNVS tranquilConfig("tranquil", 600);
 
 // REST API System
 #include "RestAPISystem.h"
-RestAPISystem restAPISystem(wifiManager, wireGuardManager, otaUpdate, fileManager, ntpClient, hwConfig, ***EXPUNGED***Config, systemType, systemVersion);
+RestAPISystem restAPISystem(wifiManager, wireGuardManager, otaUpdate, fileManager, ntpClient, hwConfig, tranquilConfig, systemType, systemVersion);
 
 // Config for LED Strip
 ConfigNVS ledStripConfig("ledStrip", 200);
@@ -182,8 +182,8 @@ void setup() {
     // NTP Config
     ntpConfig.setup();
 
-    // ***EXPUNGED*** config
-    ***EXPUNGED***Config.setup();
+    // Tranquil API config
+    tranquilConfig.setup();
 
     // WiFi Manager
     wifiManager.setup(hwConfig, &wifiConfig, systemType);
@@ -201,7 +201,7 @@ void setup() {
     // Web server
     webServer.setup(hwConfig);
     webServer.addEndpoints(restAPIEndpoints);
-    webServer.serveStaticFiles("/", "/spiffs/", "public, max-age=86400");
+    webServer.serveStaticFiles("/", "/spiffs/", "public, max-age=31536000");
     webServer.serveStaticFiles("/files/sd", "/sd/");
     webServer.enableAsyncEvents("/events");
 

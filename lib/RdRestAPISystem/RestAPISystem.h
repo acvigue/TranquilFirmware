@@ -32,13 +32,13 @@ class RestAPISystem {
     FileManager &_fileManager;
     NTPClient &_ntpClient;
     ConfigBase &_hwConfig;
-    ConfigBase &_***EXPUNGED***Config;
+    ConfigBase &_tranquilConfig;
     String _systemType;
     static String _systemVersion;
 
    public:
     RestAPISystem(WiFiManager &wifiManager, WireGuardManager &wireGuardManager, RdOTAUpdate &otaUpdate, FileManager &fileManager,
-                  NTPClient &ntpClient, ConfigBase &hwConfig, ConfigBase &***EXPUNGED***Config, const char *systemType, const char *systemVersion);
+                  NTPClient &ntpClient, ConfigBase &hwConfig, ConfigBase &tranquilConfig, const char *systemType, const char *systemVersion);
 
     // Setup and status
     void setup(RestAPIEndpoints &endpoints);
@@ -66,10 +66,10 @@ class RestAPISystem {
     void apiPostWireGuardConfig(String &reqStr, String &respStr);
     void apiPostWireGuardConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total);
 
-    // ***EXPUNGED*** settings (readonly!)
-    void apiGet***EXPUNGED***Config(String &reqStr, String &respStr);
-    void apiPost***EXPUNGED***Config(String &reqStr, String &respStr);
-    void apiPost***EXPUNGED***ConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total);
+    //Tranquil API settings
+    void apiGetTranquilConfig(String &reqStr, String &respStr);
+    void apiPostTranquilConfig(String &reqStr, String &respStr);
+    void apiPostTranquilConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total);
 
     // NTP settings
     void apiGetNTPConfig(String &reqStr, String &respStr);
