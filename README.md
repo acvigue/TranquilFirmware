@@ -1,4 +1,4 @@
-RBotFirmware
+TranquilFirmware
 ============
 
 Firmware for an ESP32 or Particle device to control robots of various geometries
