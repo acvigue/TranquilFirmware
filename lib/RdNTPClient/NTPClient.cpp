@@ -47,13 +47,11 @@ void NTPClient::applySetup() {
     if (!_pConfig) return;
     ConfigBase defaultConfig;
     if (_pDefaultConfig) defaultConfig.setConfigData(_pDefaultConfig->getString(_configName.c_str(), "").c_str());
-    Log.trace("%ssetup name %s configStr %s\n", MODULE_PREFIX, _configName.c_str(), _pConfig->getConfigCStrPtr());
     // Extract server, etc
     _ntpServer = _pConfig->getString("ntpServer", defaultConfig.getString("ntpServer", "").c_str());
     _timezone = _pConfig->getString("ntpTimezone", defaultConfig.getString("ntpTimezone", "").c_str());
     _lastNTPCheckTime = 0;
     _ntpSetup = false;
-    Log.notice("%ssetup server %s, timezone %s\n", MODULE_PREFIX, _ntpServer.c_str(), _timezone.c_str());
 }
 
 void NTPClient::setConfig(const char *configJson) {
@@ -61,7 +59,6 @@ void NTPClient::setConfig(const char *configJson) {
     if (_pConfig) {
         _pConfig->setConfigData(configJson);
         _pConfig->writeConfig();
-        Log.trace("%setConfig %s\n", MODULE_PREFIX, _pConfig->getConfigCStrPtr());
     }
 
     applySetup();

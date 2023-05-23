@@ -82,8 +82,6 @@ bool EvaluatorFiles::execWorkItem(WorkItem& workItem)
     bool retc = _fileManager.chunkedFileStart("", fileName, true);
     if (!retc)
         return false;
-    Log.trace("%sstarted chunked file %s type is %s\n", MODULE_PREFIX, 
-            fileName.c_str(), (_fileType == FILE_TYPE_GCODE ? "GCODE" : "THR"));
     _inProgress = true;
     _firstValidLineProcessed = false;
     _interpolate = true;

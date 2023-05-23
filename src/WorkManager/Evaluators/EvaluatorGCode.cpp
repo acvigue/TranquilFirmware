@@ -78,9 +78,6 @@ bool EvaluatorGCode::getGcodeCmdArgs(const char* pArgStr, RobotCommandArgs& cmdA
                         cmdArgs.setTestAllEndStops();
                     else if (endstopIdx == 0)
                         cmdArgs.setTestNoEndStops();
-#ifdef DEBUG_GCODE_EVALUATOR
-                    Log.trace("%sSet to check endstops %s\n", MODULE_PREFIX, cmdArgs.toJSON().c_str());
-#endif
                     break;
             }
             default:
@@ -112,19 +109,6 @@ bool EvaluatorGCode::interpG(String& cmdStr, RobotController* pRobotController, 
         pArgsStr = pArgsPos + 1;
     RobotCommandArgs cmdArgs;
     rslt = getGcodeCmdArgs(pArgsStr, cmdArgs);
-
-#ifdef DEBUG_GCODE_EVALUATOR
-    Log.trace("%sCmd G%d %s => X%F(%s) Y%F(%s) Z%F(%s) isStepwise %s feedrate %F isFeedrateValid %s\n", MODULE_PREFIX, cmdNum, pArgsStr,
-            cmdArgs.getValMM(0), 
-            cmdArgs.isValid(0) ? "Y" : "N",
-            cmdArgs.getValMM(1), 
-            cmdArgs.isValid(1) ? "Y" : "N",
-            cmdArgs.getValMM(2),
-            cmdArgs.isValid(2) ? "Y" : "N",
-            cmdArgs.isStepwise() ? "Y" : "N",
-            cmdArgs.getFeedrate(),
-            cmdArgs.isFeedrateValid() ? "Y" : "N");
-#endif
 
     // Switch on number
     switch(cmdNum)

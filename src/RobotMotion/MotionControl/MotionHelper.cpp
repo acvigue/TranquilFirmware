@@ -177,15 +177,6 @@ void MotionHelper::setCurPosActualPosition()
         _actuatorToPtFn(actuatorPos, curPosMM, _lastCommandedAxisPos, _axesParams);
     _lastCommandedAxisPos._axisPositionMM = curPosMM;
     _lastCommandedAxisPos._stepsFromHome = actuatorPos;
-#ifdef DEBUG_MOTION_HELPER
-    Log.trace("%sstop absAxes X%F Y%F Z%F steps %d,%d,%d\n", MODULE_PREFIX,
-                _lastCommandedAxisPos._axisPositionMM.getVal(0),
-                _lastCommandedAxisPos._axisPositionMM.getVal(1),
-                _lastCommandedAxisPos._axisPositionMM.getVal(2),
-                _lastCommandedAxisPos._stepsFromHome.getVal(0),
-                _lastCommandedAxisPos._stepsFromHome.getVal(1),
-                _lastCommandedAxisPos._stepsFromHome.getVal(2));
-#endif
 }
 
 // Set parameters such as relative vs absolute motion
@@ -290,21 +281,6 @@ bool MotionHelper::moveTo(RobotCommandArgs &args)
         numBlocks = int(ceil(lineLen / _blockDistanceMM));
     if (numBlocks == 0)
         numBlocks = 1;
-#ifdef DEBUG_MOTION_HELPER
-    Log.trace("%smoveTo curX %F(%d) curY %F(%d) curZ %F(%d) newX %F newY %F newZ %F numBlocks %d (lineLen %F / blockDistMM %F)\n", MODULE_PREFIX,
-                _lastCommandedAxisPos._axisPositionMM.getVal(0),
-                _lastCommandedAxisPos._stepsFromHome.getVal(0),
-                _lastCommandedAxisPos._axisPositionMM.getVal(1),
-                _lastCommandedAxisPos._stepsFromHome.getVal(1),
-                _lastCommandedAxisPos._axisPositionMM.getVal(2),
-                _lastCommandedAxisPos._stepsFromHome.getVal(2),
-                destPos.getVal(0),
-                destPos.getVal(1),
-                destPos.getVal(2),
-                numBlocks, 
-                lineLen, 
-                _blockDistanceMM);
-#endif
 
     // Setup for adding blocks to the pipe
     _blocksToAddCommandArgs = args;
@@ -377,32 +353,16 @@ bool MotionHelper::addToPlanner(RobotCommandArgs &args)
     if (moveOk)
     {
         moveOk = _motionPlanner.moveTo(args, actuatorCoords, _lastCommandedAxisPos, _axesParams, _motionPipeline);
-#ifdef MOTION_LOG_DEBUG
-    Log.trace("~M%d %d %d %F %F OOB %d %d\n", millis(), int(actuatorCoords.getVal(0)), 
-            int(actuatorCoords.getVal(1)), 
-            args.getPointMM().getVal(0), args.getPointMM().getVal(1),
-            args.getAllowOutOfBounds(), _allowAllOutOfBounds);
-#endif
     }
     if (moveOk)
     {
         // Update axisMotion
         _lastCommandedAxisPos._axisPositionMM = args.getPointMM();
-#ifdef DEBUG_MOTION_HELPER
-        Log.trace("%saddToPlanner updatedAxisPos X%F Y%F Z%F\n", MODULE_PREFIX,
-                        _lastCommandedAxisPos._axisPositionMM.getVal(0),
-                        _lastCommandedAxisPos._axisPositionMM.getVal(1),
-                        _lastCommandedAxisPos._axisPositionMM.getVal(2)
-                    );
-#endif
+
         // Correct overflows
         if (_correctStepOverflowFn)
         {
             _correctStepOverflowFn(_lastCommandedAxisPos, _axesParams);
-#ifdef MOTION_LOG_DEBUG
-    Log.trace("~A%d %d\n", _lastCommandedAxisPos._stepsFromHome.getVal(0), 
-            _lastCommandedAxisPos._stepsFromHome.getVal(1));
-#endif
         }            
     }
     return moveOk;
@@ -454,15 +414,6 @@ void MotionHelper::setCurPositionAsHome(int axisIdx)
     _lastCommandedAxisPos._axisPositionMM.setVal(axisIdx, _axesParams.getHomeOffsetVal(axisIdx));
     _lastCommandedAxisPos._stepsFromHome.setVal(axisIdx, _axesParams.gethomeOffSteps(axisIdx));
     _rampGenerator.setTotalStepPosition(axisIdx, _axesParams.gethomeOffSteps(axisIdx));
-#ifdef DEBUG_MOTION_HELPER
-    Log.trace("%ssetCurPosAsHome curMM X%F Y%F Z%F steps %d,%d,%d\n", MODULE_PREFIX,
-                _lastCommandedAxisPos._axisPositionMM.getVal(0),
-                _lastCommandedAxisPos._axisPositionMM.getVal(1),
-                _lastCommandedAxisPos._axisPositionMM.getVal(2),
-                _lastCommandedAxisPos._stepsFromHome.getVal(0),
-                _lastCommandedAxisPos._stepsFromHome.getVal(1),
-                _lastCommandedAxisPos._stepsFromHome.getVal(2));
-#endif
 }
 
 // Debug helper methods

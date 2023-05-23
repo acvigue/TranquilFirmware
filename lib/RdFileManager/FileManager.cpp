@@ -161,7 +161,6 @@ void FileManager::reformat(const String& fileSystemStr, String& respStr) {
 bool FileManager::getFileInfo(const String& fileSystemStr, const String& filename, int& fileLength) {
     String nameOfFS;
     if (!checkFileSystem(fileSystemStr, nameOfFS)) {
-        Log.trace("%sgetFileInfo %s invalid file system %s\n", MODULE_PREFIX, filename.c_str(), fileSystemStr.c_str());
         return false;
     }
 
@@ -174,12 +173,10 @@ bool FileManager::getFileInfo(const String& fileSystemStr, const String& filenam
 
     if (stat(rootFilename.c_str(), &st) != 0) {
         xSemaphoreGive(_fileSysMutex);
-        Log.trace("%sgetFileInfo %s cannot stat\n", MODULE_PREFIX, rootFilename.c_str());
         return false;
     }
     if (!S_ISREG(st.st_mode)) {
         xSemaphoreGive(_fileSysMutex);
-        Log.trace("%sgetFileInfo %s is a folder\n", MODULE_PREFIX, rootFilename.c_str());
         return false;
     }
     xSemaphoreGive(_fileSysMutex);
@@ -309,7 +306,6 @@ String FileManager::getFileContents(const String& fileSystemStr, const String& f
     // Check file system supported
     String nameOfFS;
     if (!checkFileSystem(fileSystemStr, nameOfFS)) {
-        Log.trace("%sgetContents %s invalid file system %s\n", MODULE_PREFIX, filename.c_str(), fileSystemStr.c_str());
         return "";
     }
 
@@ -321,12 +317,10 @@ String FileManager::getFileContents(const String& fileSystemStr, const String& f
     struct stat st;
     if (stat(rootFilename.c_str(), &st) != 0) {
         xSemaphoreGive(_fileSysMutex);
-        Log.trace("%sgetContents %s cannot stat\n", MODULE_PREFIX, rootFilename.c_str());
         return "";
     }
     if (!S_ISREG(st.st_mode)) {
         xSemaphoreGive(_fileSysMutex);
-        Log.trace("%sgetContents %s is a folder\n", MODULE_PREFIX, rootFilename.c_str());
         return "";
     }
 
@@ -336,7 +330,6 @@ String FileManager::getFileContents(const String& fileSystemStr, const String& f
     }
     if (st.st_size >= maxLen - 1) {
         xSemaphoreGive(_fileSysMutex);
-        Log.trace("%sgetContents %s free heap %d size %d too big to read\n", MODULE_PREFIX, rootFilename.c_str(), maxLen, st.st_size);
         return "";
     }
     int fileSize = st.st_size;
@@ -345,7 +338,6 @@ String FileManager::getFileContents(const String& fileSystemStr, const String& f
     FILE* pFile = fopen(rootFilename.c_str(), "rb");
     if (!pFile) {
         xSemaphoreGive(_fileSysMutex);
-        Log.trace("%sgetContents failed to open file to read %s\n", MODULE_PREFIX, rootFilename.c_str());
         return "";
     }
 
@@ -354,7 +346,6 @@ String FileManager::getFileContents(const String& fileSystemStr, const String& f
     if (!pBuf) {
         fclose(pFile);
         xSemaphoreGive(_fileSysMutex);
-        Log.trace("%sgetContents failed to allocate %d\n", MODULE_PREFIX, fileSize);
         return "";
     }
 
@@ -383,7 +374,6 @@ bool FileManager::setFileContents(const String& fileSystemStr, const String& fil
     FILE* pFile = fopen(rootFilename.c_str(), "wb");
     if (!pFile) {
         xSemaphoreGive(_fileSysMutex);
-        Log.trace("%ssetContents failed to open file to write %s\n", MODULE_PREFIX, rootFilename.c_str());
         return "";
     }
 
@@ -404,8 +394,6 @@ void FileManager::uploadAPIBlocksComplete() {
 
 void FileManager::uploadAPIBlockHandler(const char* fileSystem, const String& req, const String& filename, int fileLength, size_t index,
                                         uint8_t* data, size_t len, bool finalBlock) {
-    Log.trace("%suploadAPIBlockHandler fileSys %s, filename %s, total %d, idx %d, len %d, final %d\n", MODULE_PREFIX, fileSystem, filename.c_str(),
-              fileLength, index, len, finalBlock);
 
     // Check file system supported
     String nameOfFS;
@@ -424,16 +412,12 @@ void FileManager::uploadAPIBlockHandler(const char* fileSystem, const String& re
         pFile = fopen(tmpRootFilename.c_str(), "wb");
     if (!pFile) {
         xSemaphoreGive(_fileSysMutex);
-        Log.trace("%suploadBlock failed to open file to write %s\n", MODULE_PREFIX, tmpRootFilename.c_str());
         return;
     }
 
     // Write file block to temporary file
     size_t bytesWritten = fwrite(data, 1, len, pFile);
     fclose(pFile);
-    if (bytesWritten != len) {
-        Log.trace("%suploadBlock write failed %s (written %d != len %d)\n", MODULE_PREFIX, tmpRootFilename.c_str(), bytesWritten, len);
-    }
 
     // Rename if last block
     if (finalBlock) {
@@ -446,9 +430,7 @@ void FileManager::uploadAPIBlockHandler(const char* fileSystem, const String& re
         }
 
         // Rename
-        if (rename(tmpRootFilename.c_str(), rootFilename.c_str()) != 0) {
-            Log.trace("%sfailed rename %s to %s\n", MODULE_PREFIX, tmpRootFilename.c_str(), rootFilename.c_str());
-        }
+        rename(tmpRootFilename.c_str(), rootFilename.c_str());
     }
 
     // Restore semaphore
@@ -491,7 +473,6 @@ bool FileManager::chunkedFileStart(const String& fileSystemStr, const String& fi
     struct stat st;
     String rootFilename = getFilePath(nameOfFS, filename);
     if ((stat(rootFilename.c_str(), &st) != 0) || !S_ISREG(st.st_mode)) {
-        Log.trace("%schunked file doesn't exist %s\n", MODULE_PREFIX, rootFilename.c_str());
         xSemaphoreGive(_fileSysMutex);
         return false;
     }
@@ -503,7 +484,7 @@ bool FileManager::chunkedFileStart(const String& fileSystemStr, const String& fi
     _chunkedFileInProgress = true;
     _chunkedFilePos = 0;
     _chunkOnLineEndings = readByLine;
-    Log.trace("%schunkedFileStart filename %s size %d byLine %s\n", MODULE_PREFIX, rootFilename.c_str(), _chunkedFileLen, (readByLine ? "Y" : "N"));
+
     return true;
 }
 
@@ -549,12 +530,10 @@ uint8_t* FileManager::chunkFileNext(String& filename, int& fileLen, int& chunkPo
         pFile = fopen(_chunkedFilename.c_str(), "rb");
     if (!pFile) {
         xSemaphoreGive(_fileSysMutex);
-        Log.trace("%schunkNext failed open %s\n", MODULE_PREFIX, _chunkedFilename.c_str());
         return NULL;
     }
     if ((_chunkedFilePos != 0) && (fseek(pFile, _chunkedFilePos, SEEK_SET) != 0)) {
         xSemaphoreGive(_fileSysMutex);
-        Log.trace("%schunkNext failed seek in filename %s to %d\n", MODULE_PREFIX, _chunkedFilename.c_str(), _chunkedFilePos);
         fclose(pFile);
         return NULL;
     }

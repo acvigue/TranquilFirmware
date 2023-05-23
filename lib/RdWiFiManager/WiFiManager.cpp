@@ -147,7 +147,6 @@ void WiFiManager::setConfig(const char *configJson) {
     if (_pConfigBase) {
         _pConfigBase->setConfigData(configJson);
         _pConfigBase->writeConfig();
-        Log.trace("%setConfig %s\n", MODULE_PREFIX, _pConfigBase->getConfigCStrPtr());
     }
 
     _deviceRestartPending = true;
@@ -171,7 +170,6 @@ void WiFiManager::getConfig(String& config) {
 }
 
 void WiFiManager::wiFiEventHandler(WiFiEvent_t event) {
-    Log.trace("%sEvent %s\n", MODULE_PREFIX, getEventName(event));
     switch (event) {
         case SYSTEM_EVENT_STA_GOT_IP:
             Log.notice("%sGotIP %s\n", MODULE_PREFIX, WiFi.localIP().toString().c_str());

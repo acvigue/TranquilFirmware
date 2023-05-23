@@ -82,10 +82,6 @@ void WebServer::addEndpoints(RestAPIEndpoints &endpoints) {
                 break;
         }
 
-        // Debug
-        Log.trace("%sAdding API %s type %s\n", MODULE_PREFIX, pEndpoint->_endpointStr.c_str(),
-                  endpoints.getEndpointTypeStr(pEndpoint->_endpointType));
-
         // Handle the endpoint
         _pServer->on(("/" + pEndpoint->_endpointStr).c_str(), webMethod,
 
@@ -99,8 +95,6 @@ void WebServer::addEndpoints(RestAPIEndpoints &endpoints) {
                              String reqUrl = recreatedReqUrl(request);
                              Log.verbose("%sCalling %s url %s\n", MODULE_PREFIX, pEndpoint->_endpointStr.c_str(), request->url().c_str());
                              pEndpoint->callback(reqUrl, respStr);
-                         } else {
-                             Log.trace("%sUnknown type %s url %s\n", MODULE_PREFIX, pEndpoint->_endpointStr.c_str(), request->url().c_str());
                          }
                          request->send(200, "application/json", respStr.c_str());
                      },
@@ -186,10 +180,6 @@ void WebServer::addStaticResource(const WebServerResource *pResource, const char
     const char *pPath = pResource->_pResId;
     if (pAliasPath != NULL) pPath = pAliasPath;
 
-    // Debug
-    Log.trace("%sAdding static resource %s mime %s encoding %s len %d\n", MODULE_PREFIX, pPath, pResource->_pMimeType, pResource->_pContentEncoding,
-              pResource->_dataLen);
-
     // Static pages
     _pServer->on(pPath, HTTP_GET, [pResource](AsyncWebServerRequest *request) {
         AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", pResource->_pData, pResource->_dataLen);
@@ -207,8 +197,6 @@ void WebServer::serveStaticFiles(const char *baseUrl, const char *baseFolder, co
     // Check enabled
     if (!_pServer) return;
 
-    // Handle file systems
-    Log.trace("%sserveStaticFiles url %s folder %s\n", MODULE_PREFIX, baseUrl, baseFolder);
     AsyncStaticFileHandler *handler = new AsyncStaticFileHandler(baseUrl, baseFolder, cache_control);
     _pServer->addHandler(handler);
 }
@@ -218,15 +206,6 @@ void WebServer::enableAsyncEvents(const String &eventsURL) {
     if (_pAsyncEvents) return;
     _pAsyncEvents = new AsyncEventSource(eventsURL);
     if (!_pAsyncEvents) return;
-
-    // Handle connection
-    // _pAsyncEvents->onConnect([](AsyncEventSourceClient *client) {
-    // if(client->lastId())
-    // {
-    //     Log.trace("%sevent client reconn - last messageID got is: %d\n", MODULE_PREFIX,
-    //             client->lastId());
-    // }
-    // });
 
     // Add handler for events
     _pServer->addHandler(_pAsyncEvents);

@@ -8,7 +8,6 @@
 #include <Arduino.h>
 
 #include "Evaluators/EvaluatorFiles.h"
-#include "Evaluators/EvaluatorPatterns.h"
 #include "Evaluators/EvaluatorSequences.h"
 #include "Evaluators/EvaluatorThetaRhoLine.h"
 #include "LedStrip.h"
@@ -32,7 +31,6 @@ class WorkManager {
     FileManager& _fileManager;
 
     // Evaluators
-    EvaluatorPatterns _evaluatorPatterns;
     EvaluatorSequences _evaluatorSequences;
     EvaluatorFiles _evaluatorFiles;
     EvaluatorThetaRhoLine _evaluatorThetaRhoLine;

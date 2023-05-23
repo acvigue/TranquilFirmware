@@ -19,7 +19,6 @@ WorkManager::WorkManager(ConfigBase &mainConfig, ConfigBase &robotConfig, RobotC
       _ledStrip(ledStrip),
       _restAPISystem(restAPISystem),
       _fileManager(fileManager),
-      _evaluatorPatterns(fileManager, *this),
       _evaluatorSequences(fileManager, *this),
       _evaluatorFiles(fileManager, *this),
       _evaluatorThetaRhoLine(*this) {
@@ -111,7 +110,6 @@ bool WorkManager::setLedStripConfig(const uint8_t *pData, int len) {
 }
 
 bool WorkManager::setRobotConfig(const uint8_t *pData, int len) {
-    Log.trace("%ssetRobotConfig len %d\n", MODULE_PREFIX, len);
     // Check sensible length
     if (len + 10 > _robotConfig.getMaxLen()) return false;
     char *pTmp = new char[len + 1];
@@ -193,9 +191,6 @@ void WorkManager::processSingle(const char *pCmdStr, String &retStr) {
     } else {
         // Send the line to the workflow manager
         if (strlen(pCmdStr) != 0) {
-#ifdef DEBUG_WORK_ITEM_SERVICE
-            Log.trace("%sprocessSingle add %s\n", MODULE_PREFIX, pCmdStr);
-#endif
             bool rslt = _workItemQueue.add(pCmdStr);
             if (!rslt) {
                 retStr = "{\"rslt\":\"busy\"}";
@@ -215,9 +210,6 @@ void WorkManager::addWorkItem(WorkItem &workItem, String &retStr, int cmdIdx) {
     }
 
     // Handle multiple commands (semicolon delimited)
-#ifdef DEBUG_WORK_ITEM_SERVICE
-    Log.trace("%s addWorkItem %s\n", MODULE_PREFIX, workItem.getCString());
-#endif
     const int MAX_TEMP_CMD_STR_LEN = 1000;
     const char *pCurStr = workItem.getCString();
     const char *pCurStrEnd = pCurStr;
@@ -237,9 +229,6 @@ void WorkManager::addWorkItem(WorkItem &workItem, String &retStr, int cmdIdx) {
 
             // process
             if (cmdIdx == -1 || cmdIdx == curCmdIdx) {
-#ifdef DEBUG_WORK_ITEM_SERVICE
-                Log.trace("%ssingle %d %s\n", MODULE_PREFIX, stLen, pCurCmd);
-#endif
                 processSingle(pCurCmd, retStr);
             }
             delete[] pCurCmd;
@@ -254,9 +243,6 @@ void WorkManager::addWorkItem(WorkItem &workItem, String &retStr, int cmdIdx) {
 }
 
 bool WorkManager::canBeProcessed(WorkItem &workItem) {
-    // See if it is a pattern evaluator work item
-    if (_evaluatorPatterns.isValid(workItem)) return !_evaluatorPatterns.isBusy();
-
     // See if it is a theta-rho evaluator work item
     if (_evaluatorThetaRhoLine.isValid(workItem)) return !_evaluatorThetaRhoLine.isBusy();
 
@@ -273,36 +259,20 @@ bool WorkManager::canBeProcessed(WorkItem &workItem) {
 bool WorkManager::execWorkItem(WorkItem &workItem) {
     // See if the command is a pattern generator
     bool handledOk = false;
-    // See if it is a pattern evaluator
-    if (_evaluatorPatterns.isValid(workItem)) {
-        handledOk = _evaluatorPatterns.execWorkItem(workItem);
-#ifdef DEBUG_WORK_ITEM_SERVICE
-        Log.trace("%sexecWorkIterm %s isPattern handledOk = %s\n", MODULE_PREFIX, workItem.getCString(), handledOk ? "YES" : "NO");
-#endif
-        if (handledOk) return handledOk;
-    }
+
     // See if it is a theta-rho line
     if (_evaluatorThetaRhoLine.isValid(workItem)) {
         handledOk = _evaluatorThetaRhoLine.execWorkItem(workItem);
-#ifdef DEBUG_WORK_ITEM_SERVICE
-        Log.trace("%sexecWorkIterm %s isTHR handledOk = %s\n", MODULE_PREFIX, workItem.getCString(), handledOk ? "YES" : "NO");
-#endif
         if (handledOk) return handledOk;
     }
     // See if it is a file to process
     if (_evaluatorFiles.isValid(workItem)) {
         handledOk = _evaluatorFiles.execWorkItem(workItem);
-#ifdef DEBUG_WORK_ITEM_SERVICE
-        Log.trace("%sexecWorkIterm %s isFile handledOk = %s\n", MODULE_PREFIX, workItem.getCString(), handledOk ? "YES" : "NO");
-#endif
         if (handledOk) return handledOk;
     }
     // See if it is a command sequence
     if (_evaluatorSequences.isValid(workItem)) {
         handledOk = _evaluatorSequences.execWorkItem(workItem);
-#ifdef DEBUG_WORK_ITEM_SERVICE
-        Log.trace("%sexecWorkIterm %s isSequence handledOk = %s\n", MODULE_PREFIX, workItem.getCString(), handledOk ? "YES" : "NO");
-#endif
         if (handledOk) return handledOk;
     }
     // Not handled
@@ -310,39 +280,6 @@ bool WorkManager::execWorkItem(WorkItem &workItem) {
 }
 
 void WorkManager::service() {
-#ifdef DEBUG_WORK_ITEM_SERVICE
-    if (!Utils::isTimeout(millis(), _debugLastWorkServiceMs, DEBUG_BETWEEN_WORK_ITEM_SERVICES_MS)) return;
-    _debugLastWorkServiceMs = millis();
-    {
-        WorkItem workItem;
-        bool rslt = _workItemQueue.peek(workItem);
-        bool prc = false;
-        const char *pStr = "";
-        if (rslt) {
-            prc = canBeProcessed(workItem);
-            pStr = workItem.getString().c_str();
-        }
-        Log.trace("%sservice robotCanAccept %d waiting %d rslt %d canProc %d peek %s\n", MODULE_PREFIX, _robotController.canAcceptCommand(),
-                  _workItemQueue.size(), rslt, prc, pStr);
-        // Note that the following debug code breaks stopping the robot
-        // This is because the stop can come during the debug loop and would clear the queue
-        // but the debug loop ends up replacing the items that were removed!
-        std::queue<WorkItem> newQ;
-        int qSize = _workItemQueue.size();
-        for (int i = 0; i < qSize; i++) {
-            WorkItem it;
-            _workItemQueue.get(it);
-            newQ.push(it);
-            Log.trace("QUEUE ITEM %d = %s\n", i, it.getCString());
-        }
-        for (int i = 0; i < qSize; i++) {
-            WorkItem it = newQ.front();
-            _workItemQueue.add(it.getCString());
-            newQ.pop();
-        }
-    }
-#endif
-
     // Pump the workflow here
     // Check if the RobotController can accept more
     if (_robotController.canAcceptCommand()) {
@@ -357,10 +294,6 @@ void WorkManager::service() {
                     // Check for extended commands
                     rslt = execWorkItem(workItem);
 
-#ifdef DEBUG_WORK_ITEM_SERVICE
-                    Log.trace("%sgetWorkflow execRslt=%d (waiting %d), %s\n", MODULE_PREFIX, rslt, _workItemQueue.size(),
-                              workItem.getString().c_str());
-#endif
                     // Check for GCode
                     if (!rslt) EvaluatorGCode::interpretGcode(workItem, &_robotController, true);
                 }
@@ -423,7 +356,6 @@ void WorkManager::handleStartupCommands() {
 }
 
 void WorkManager::evaluatorsStop() {
-    _evaluatorPatterns.stop();
     _evaluatorSequences.stop();
     _evaluatorFiles.stop();
     _evaluatorThetaRhoLine.stop();
@@ -431,14 +363,12 @@ void WorkManager::evaluatorsStop() {
 
 void WorkManager::evaluatorsService() {
     _evaluatorThetaRhoLine.service();
-    _evaluatorPatterns.service();
     if (!evaluatorsBusy(false)) _evaluatorFiles.service();
     if (!evaluatorsBusy(true)) _evaluatorSequences.service();
 }
 
 bool WorkManager::evaluatorsBusy(bool includeFileEvaluator) {
     // Check if we're creating a pattern or handling a file, etc
-    if (_evaluatorPatterns.isBusy()) return true;
     if (_evaluatorThetaRhoLine.isBusy()) return true;
     // Evaluator files must be after any other evaluators that might be in the process
     // of handling a line from a file already
@@ -452,7 +382,6 @@ bool WorkManager::evaluatorsBusy(bool includeFileEvaluator) {
 
 void WorkManager::evaluatorsSetConfig(const char *configJson, const char *jsonPath, const char *robotAttributes) {
     String evaluatorConfig = RdJson::getString(jsonPath, "{}", configJson);
-    _evaluatorPatterns.setConfig(evaluatorConfig.c_str(), robotAttributes);
     _evaluatorSequences.setConfig(evaluatorConfig.c_str());
     _evaluatorFiles.setConfig(evaluatorConfig.c_str());
     _evaluatorThetaRhoLine.setConfig(evaluatorConfig.c_str(), robotAttributes);

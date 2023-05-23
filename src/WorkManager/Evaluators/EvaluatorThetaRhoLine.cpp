@@ -44,9 +44,6 @@ void EvaluatorThetaRhoLine::setConfig(const char *configStr, const char* robotAt
     _bedRadiusMM = std::min(sizeX, sizeY) / 2;
     _centreOffsetX = sizeX / 2 - originX;
     _centreOffsetY = sizeY / 2 - originY;
-    Log.trace("%ssetConfig StepAngleDegrees %F StepAdaptation %s continueFromPrevious %s radiusMM %Fmm offsetX %F offsetY %F\n", MODULE_PREFIX,
-              _stepAngle, _stepAdaptation ? "Y" : "N", _continueFromPrevious ? "Y" : "N",
-              _bedRadiusMM, _centreOffsetX, _centreOffsetY);
 }
 
 // Is Busy
@@ -85,10 +82,6 @@ bool EvaluatorThetaRhoLine::execWorkItem(WorkItem &workItem)
     String rhoStr = Utils::getNthField(workItem.getCString(), 2, '/');
     double newTheta = atof(thetaStr.c_str()) * -1.00 + (M_PI * .5);
     double newRho = atof(rhoStr.c_str());
-#ifdef THETA_RHO_DEBUG
-    Log.trace("%sexecWorkItem %s\n", MODULE_PREFIX,
-              workItem.getCString());
-#endif
 
     // Check for an uninterpolated line
     if (workItem.getString().startsWith("_THRLINE_"))
@@ -102,9 +95,6 @@ bool EvaluatorThetaRhoLine::execWorkItem(WorkItem &workItem)
         sprintf(lineBuf, "G0 X%0.3f Y%0.3f", x, y);
         String retStr;
         WorkItem workItem(lineBuf);
-#ifdef THETA_RHO_DEBUG
-        Log.trace("%sexecWorkItem thrNonInterp %s\n", MODULE_PREFIX, lineBuf);
-#endif
         _workManager.addWorkItem(workItem, retStr);
         return true;
     }
@@ -172,12 +162,6 @@ bool EvaluatorThetaRhoLine::execWorkItem(WorkItem &workItem)
     _curStep = 0;
     _inProgress = true;
     _isInterpolating = true;
-#ifdef THETA_RHO_DEBUG
-    char debugStr[200];
-    sprintf(debugStr, "Theta %8.6f Rho %8.6f CurTheta %8.6f CurRho %8.6f TotalSteps %d ThetaInc %8.6f RhoInc %8.6f AbsDeltaTheta %8.6f StepAng %8.6f AdaptedStepAng %8.6f",
-            newTheta, newRho, _curTheta, _curRho, _interpolateSteps, _thetaInc, _rhoInc, absDeltaTheta, _stepAngle, adaptedStepAngle);
-    Log.trace("%sexecWorkItem %s\n", MODULE_PREFIX, debugStr);
-#endif
     return true;
 }
 
@@ -196,9 +180,6 @@ void EvaluatorThetaRhoLine::service()
     {
         if (_curStep >= _interpolateSteps)
         {
-#ifdef THETA_RHO_DEBUG
-            Log.trace("%sservice finished\n", MODULE_PREFIX);
-#endif
             _inProgress = false;
             return;
         }
@@ -222,9 +203,6 @@ void EvaluatorThetaRhoLine::service()
         sprintf(lineBuf, "G0 X%0.3f Y%0.3f", x, y);
         String retStr;
         WorkItem workItem(lineBuf);
-#ifdef THETA_RHO_DEBUG
-        Log.trace("%sservice %s\n", MODULE_PREFIX, lineBuf);
-#endif
         _workManager.addWorkItem(workItem, retStr);
     }
 }

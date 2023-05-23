@@ -32,16 +32,12 @@ bool ConfigNVS::setup() {
     // Setup base class
     ConfigBase::setup();
 
-    // Debug
-    Log.trace("%sConfig %s ...\n", MODULE_PREFIX, _configNamespace.c_str());
-
     // Open preferences read-only
     _preferences.begin(_configNamespace.c_str(), true);
 
     // Get config string
     String configData = _preferences.getString("JSON", "{}");
     setConfigData(configData.c_str());
-    Log.trace("%sConfig %s read: len(%d) maxlen %d\n", MODULE_PREFIX, _configNamespace.c_str(), configData.length(), ConfigBase::getMaxLen());
 
     // Close prefs
     _preferences.end();
@@ -54,18 +50,12 @@ bool ConfigNVS::setup() {
 bool ConfigNVS::writeConfig() {
     // Get length of string
     if (_dataStrJSON.length() >= _configMaxDataLen) _dataStrJSON = _dataStrJSON.substring(0, _configMaxDataLen - 1);
-    Log.trace("%sWriting %s config len: %d\n", MODULE_PREFIX, _configNamespace.c_str(), _dataStrJSON.length());
 
     // Open preferences writeable
     _preferences.begin(_configNamespace.c_str(), false);
 
     // Set config string
-    int numPut = _preferences.putString("JSON", _dataStrJSON.c_str());
-    if (numPut != _dataStrJSON.length()) {
-        Log.trace("%sFailed %s write - written = %d\n", MODULE_PREFIX, _configNamespace.c_str(), numPut);
-    } else {
-        Log.trace("%sWrite ok written = %d\n", MODULE_PREFIX, numPut);
-    }
+    _preferences.putString("JSON", _dataStrJSON.c_str());
 
     // Close prefs
     _preferences.end();

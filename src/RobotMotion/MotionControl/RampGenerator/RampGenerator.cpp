@@ -322,7 +322,6 @@ bool IRAM_ATTR RampGenerator::handleStepMotion(MotionBlock *pBlock)
 
             // Step the axis
             _rampGenIO.stepStart(axisIdx);
-            // Log.trace("RampGenerator::procTick otherAxisStep: %d (ax %d)\n", pAxisInfo->_pinStep, axisIdx);
             _curStepCount[axisIdx]++;
             if (_curStepCount[axisIdx] < _stepsTotalAbs[axisIdx])
                 anyAxisMoving = true;

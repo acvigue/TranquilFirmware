@@ -77,6 +77,9 @@ void RestAPISystem::setup(RestAPIEndpoints &endpoints) {
     endpoints.addEndpoint("settings/tranquil", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
                           std::bind(&RestAPISystem::apiGetTranquilConfig, this, std::placeholders::_1, std::placeholders::_2),
                           "Get Tranquil configuration");
+    endpoints.addEndpoint("heap", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
+                          std::bind(&RestAPISystem::apiGetHeap, this, std::placeholders::_1, std::placeholders::_2),
+                          "Get free heap");
     endpoints.addEndpoint("settings/tranquil", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_POST,
                           std::bind(&RestAPISystem::apiPostTranquilConfig, this, std::placeholders::_1, std::placeholders::_2),
                           "Set Tranquil configuration", "application/json", NULL, true, NULL,
@@ -144,6 +147,10 @@ void RestAPISystem::apiReset(String &reqStr, String &respStr) {
     // Restart the device
     _deviceRestartPending = true;
     _deviceRestartMs = millis();
+}
+
+void RestAPISystem::apiGetHeap(String &reqStr, String &respStr) {
+    respStr = ESP.getFreeHeap();
 }
 
 // MARK: WiFi
@@ -339,12 +346,10 @@ void RestAPISystem::apiDeleteFile(String &reqStr, String &respStr) {
     filenameStr.replace("~", "/");
     if (filenameStr.length() != 0) rslt = _fileManager.deleteFile(fileSystemStr, filenameStr);
     Utils::setJsonBoolResult(respStr, rslt);
-    Log.trace("%sdeleteFile fs %s, filename %s rslt %s\n", MODULE_PREFIX, fileSystemStr.c_str(), filenameStr.c_str(), rslt ? "ok" : "fail");
 }
 
 // Upload file to file system - completed
 void RestAPISystem::apiUploadToFileManComplete(String &reqStr, String &respStr) {
-    Log.trace("%sapiUploadToFileManComplete %s\n", MODULE_PREFIX, reqStr.c_str());
     _fileManager.uploadAPIBlocksComplete();
     Utils::setJsonBoolResult(respStr, true);
 }

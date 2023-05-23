@@ -79,7 +79,6 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
 
     // Get LED config
     ConfigBase ledConfig(pConfig->getString(ledStripName, "").c_str());
-    Log.trace("%ssetup name %s configStr %s\n", MODULE_PREFIX, _name.c_str(), ledConfig.getConfigCStrPtr());
 
     // LED Strip Negative PWM Pin
     String pinStr = ledConfig.getString("ledPin", "");
@@ -130,7 +129,6 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
     // If there is no LED data stored, set to default
     String ledStripConfigStr = _ledNvValues.getConfigString();
     if (ledStripConfigStr.length() == 0 || ledStripConfigStr.equals("{}")) {
-        Log.trace("%sNo LED Data Found in NV Storge, Defaulting\n", MODULE_PREFIX);
         // Default to LED On, Half Brightness
         _ledOn = true;
         _ledBrightness = 0x7f;
@@ -160,7 +158,6 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
         _secGreenVal = _ledNvValues.getLong("secGreenVal", 127);
         _secBlueVal = _ledNvValues.getLong("secBlueVal", 127);
         _autoDimStrength = _ledNvValues.getLong("autoDimStrength", 15);
-        Log.trace("%sLED Setup from JSON\n", MODULE_PREFIX);
     }
     if (_ledIsRGBW) {
         _leds = new CRGBW[_ledCount];
@@ -183,7 +180,6 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
     _isSetup = true;
     // Trigger initial write
     ledConfigChanged = true;
-    Log.trace("%sLED Configured: On: %d, Value: %d, AutoDim: %d\n", MODULE_PREFIX, _ledOn, _ledBrightness, _autoDim);
 }
 
 void LedStrip::updateLedFromConfig(const char* pLedJson) {
@@ -441,7 +437,6 @@ void LedStrip::show() {
 
 void LedStrip::configChanged() {
     // Reset config
-    Log.trace("%sconfigChanged\n", MODULE_PREFIX);
     setup(_pHwConfig, _name.c_str());
 }
 
@@ -485,7 +480,6 @@ void LedStrip::updateNv() {
     jsonStr += "}";
     _ledNvValues.setConfigData(jsonStr.c_str());
     _ledNvValues.writeConfig();
-    Log.trace("%supdateNv() : wrote %s\n", MODULE_PREFIX, _ledNvValues.getConfigCStrPtr());
 }
 
 // Set sleep mode

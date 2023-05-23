@@ -176,7 +176,6 @@ jsmnrtok_t* RdJson::parseJson(const char* jsonStr, int& numTokens,
     int tokenCountRslt = JSMNR_parse(&parser, jsonStr, strlen(jsonStr),
                                      NULL, maxTokens);
     if (tokenCountRslt < 0) {
-        Log.trace("RdJson: parseJson result %d maxTokens %d jsonLen %d\n", tokenCountRslt, maxTokens, strlen(jsonStr));
         JSMNR_logLongStr("RdJson: jsonStr", jsonStr);
         return NULL;
     }
@@ -192,7 +191,6 @@ jsmnrtok_t* RdJson::parseJson(const char* jsonStr, int& numTokens,
                                  pTokens, tokenCountRslt);
     if (tokenCountRslt < 0) {
         Log.notice("parseJson result: %d\n", tokenCountRslt);
-        Log.trace("jsonStr %s numTok %d maxTok %d\n", jsonStr, numTokens, maxTokens);
         delete[] pTokens;
         return NULL;
     }

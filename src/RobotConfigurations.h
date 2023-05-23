@@ -20,12 +20,9 @@ class RobotConfigurations
             Log.verbose("RobotConfigurations: Testing %s against %s\n", robotType.c_str(), robotTypeName);
             if (robotType.equals(robotTypeName))
             {
-                Log.trace("RobotConfigurations: Config for %s found\n", robotTypeName);
-                Log.trace("RobotConfigurations: config str %s\n", _robotConfigs[configIdx]);
                 return _robotConfigs[configIdx];
             }
         }
-        Log.trace("RobotConfigurations: Config for %s not found\n", robotTypeName);
         return "{}";
     }
 

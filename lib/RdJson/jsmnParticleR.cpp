@@ -55,7 +55,6 @@ static int JSMNR_parse_primitive(JSMNR_parser *parser, const char *js,
 				goto found;
 		}
 		if (js[parser->pos] < 32 || js[parser->pos] >= 127) {
-            Log.trace("JSMNR_ERROR_INVAL ch bounds %d pos %d\n", js[parser->pos], parser->pos);
             parser->pos = start;
 			return JSMNR_ERROR_INVAL;
 		}
@@ -132,7 +131,6 @@ static int JSMNR_parse_string(JSMNR_parser *parser, const char *js,
 						if(!((js[parser->pos] >= 48 && js[parser->pos] <= 57) || // 0-9
 									(js[parser->pos] >= 65 && js[parser->pos] <= 70) || // A-F
 									(js[parser->pos] >= 97 && js[parser->pos] <= 102))) { // a-f
-                            Log.trace("JSMNR_ERROR_INVAL hex bounds %d pos %d\n", js[parser->pos], parser->pos);
 							parser->pos = start;
 							return JSMNR_ERROR_INVAL;
 						}
@@ -142,7 +140,6 @@ static int JSMNR_parse_string(JSMNR_parser *parser, const char *js,
 					break;
 				// Unexpected symbol
 				default:
-                    Log.trace("JSMNR_ERROR_INVAL Unexpected %d pos %d\n", js[parser->pos], parser->pos);
 					parser->pos = start;
 					return JSMNR_ERROR_INVAL;
 			}
@@ -331,19 +328,11 @@ void JSMNR_init(JSMNR_parser *parser) {
 // Helper function to log long strings
 void JSMNR_logLongStr(const char* headerMsg, const char* toLog, bool infoLevel)
 {
-    if (infoLevel)
-        Log.notice(headerMsg);
-    else
-        Log.trace(headerMsg);
     const int linLen = 80;
     for (unsigned int i = 0; i < strlen(toLog); i+=linLen)
     {
         char pBuf[linLen+1];
         strncpy(pBuf, toLog+i, linLen);
         pBuf[linLen] = 0;
-        if (infoLevel)
-            Log.notice(pBuf);
-        else
-            Log.trace(pBuf);
     }
 }

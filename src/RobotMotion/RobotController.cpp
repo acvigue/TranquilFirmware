@@ -10,12 +10,8 @@
 #include "RobotCommandArgs.h"
 
 // Robot types
-#include "Robots/RobotMugBot.h"
-#include "Robots/RobotGeistBot.h"
-#include "Robots/RobotHockeyBot.h"
 #include "Robots/RobotSandTableScara.h"
 #include "Robots/RobotSandTableRotary.h"
-#include "Robots/RobotXYBot.h"
 
 RobotController::RobotController()
 {
@@ -39,23 +35,7 @@ bool RobotController::init(const char* configStr)
 
     // Get the robot geometry from the config
     String robotModel = robotGeom.getString("model", "");
-    if (robotModel.equalsIgnoreCase("MugBot"))
-    {
-        Log.notice("Constructing %s\n", robotModel.c_str());
-        _pRobot = new RobotMugBot(robotModel.c_str(), _motionHelper);
-        if (!_pRobot)
-            return false;
-        _pRobot->init(configStr);
-    }
-    else if (robotModel.equalsIgnoreCase("GeistBot"))
-    {
-        Log.notice("Constructing %s\n", robotModel.c_str());
-        _pRobot = new RobotGeistBot(robotModel.c_str(), _motionHelper);
-        if (!_pRobot)
-            return false;
-        _pRobot->init(configStr);
-    }
-    else if (robotModel.equalsIgnoreCase("SingleArmScara"))
+    if (robotModel.equalsIgnoreCase("SingleArmScara"))
     {
         Log.notice("Constructing %s\n", robotModel.c_str());
         _pRobot = new RobotSandTableScara(robotModel.c_str(), _motionHelper);
@@ -67,22 +47,6 @@ bool RobotController::init(const char* configStr)
     {
         Log.notice("Constructing %s\n", robotModel.c_str());
         _pRobot = new RobotSandTableRotary(robotModel.c_str(), _motionHelper);
-        if (!_pRobot)
-            return false;
-        _pRobot->init(configStr);
-    }
-    else if (robotModel.equalsIgnoreCase("HBot"))
-    {
-        Log.notice("Constructing %s\n", robotModel.c_str());
-        _pRobot = new RobotHockeyBot(robotModel.c_str(), _motionHelper);
-        if (!_pRobot)
-            return false;
-        _pRobot->init(configStr);
-    }
-    else if ((robotModel.equalsIgnoreCase("Cartesian")) || (robotModel.equalsIgnoreCase("XYBot")))
-    {
-        Log.notice("Constructing %s\n", robotModel.c_str());
-        _pRobot = new RobotXYBot(robotModel.c_str(), _motionHelper);
         if (!_pRobot)
             return false;
         _pRobot->init(configStr);

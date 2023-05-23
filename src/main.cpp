@@ -151,7 +151,7 @@ TaskHandle_t ledTask;
 void ledTaskFunc(void* parameter) {
     for (;;) {
         ledStrip.serviceStrip();
-        delay(16);
+        delay(33);
     }
 }
 

@@ -50,6 +50,7 @@ class RestAPISystem {
 
     // Reset machine
     void apiReset(String &reqStr, String &respStr);
+    void apiGetHeap(String &reqStr, String &respStr);
 
     // WiFi Settings
     void apiGetWiFiConfig(String &reqStr, String &respStr);

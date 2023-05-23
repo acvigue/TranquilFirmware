@@ -44,7 +44,6 @@ void TrinamicsController::configure(const char* configJSON) {
 
     // Get chip
     String mcChip = RdJson::getString("chip", "NONE", motionController.c_str());
-    Log.trace("%sconfigure motionController %s chip %s\n", MODULE_PREFIX, motionController.c_str(), mcChip.c_str());
 
     if ((mcChip == "TMC2208" || mcChip == "TMC2209")) {
         // SPI settings

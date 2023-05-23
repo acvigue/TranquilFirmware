@@ -245,10 +245,7 @@ class AxisFloats
         }
         return sqrt(distSum);
     }
-    void logDebugStr(const char *prefixStr)
-    {
-        Log.trace("%s X %F Y %F Z %F\n", prefixStr, _pt[0], _pt[1], _pt[2]);
-    }
+    void logDebugStr(const char *prefixStr) {}
     String toJSON()
     {
         String jsonStr = "[";

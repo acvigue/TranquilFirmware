@@ -64,7 +64,6 @@ void WireGuardManager::setConfig(const char *configJson) {
     if (_pConfigBase) {
         _pConfigBase->setConfigData(configJson);
         _pConfigBase->writeConfig();
-        Log.trace("%setConfig %s\n", MODULE_PREFIX, _pConfigBase->getConfigCStrPtr());
     }
 
     applyConfig();

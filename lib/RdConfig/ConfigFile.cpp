@@ -27,7 +27,6 @@ bool ConfigFile::setup()
     // Get config string
     String configData = _fileManager.getFileContents(_fileSystem, _filename, _configMaxDataLen);
     setConfigData(configData.c_str());
-    Log.trace("%sConfig %s read len(%d) %s\n", MODULE_PREFIX, _filename.c_str(), configData.length(), configData.c_str());
 
     // Ok
     return true;
@@ -48,10 +47,6 @@ bool ConfigFile::writeConfig()
         // Write config file
         _fileManager.setFileContents(_fileSystem, _filename, _dataStrJSON);
     }
-
-    Log.trace("%sWritten config %s len %d%s\n", MODULE_PREFIX,
-                    _filename.c_str(), _dataStrJSON.length(),
-                    (_dataStrJSON.length() >= _configMaxDataLen ? " TRUNCATED" : ""));
 
     // Ok
     return true;

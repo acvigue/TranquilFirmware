@@ -29,8 +29,6 @@ void EvaluatorSequences::setConfig(const char* configStr)
     _defaultShuffleMode = RdJson::getLong("seqShuffleMode", 0, configStr) != 0;
     _defaultRepeatMode = RdJson::getLong("seqRepeatMode", 0, configStr) != 0;
     _lineCount = 0;
-    Log.trace("%ssetConfig defaultShuffleMode %s defaultRepeatMode %s\n", MODULE_PREFIX, 
-                _shuffleMode ? "Y" : "N",  _repeatMode ? "Y" : "N");
 }
 
 const char* EvaluatorSequences::getConfig()
@@ -124,11 +122,8 @@ bool EvaluatorSequences::execWorkItem(WorkItem& workItem)
         _reqLineIdx = 0;
         if (_shuffleMode)
             _reqLineIdx = rand() % _lineCount;
-        Log.trace("%sexecWorkItem len %d lineCount %d reqLineIdx %d shuffleMode %s repeatMode %s\n", MODULE_PREFIX, 
-                _commandList.length(), _lineCount, _reqLineIdx, _shuffleMode ? "Y" : "N",  _repeatMode ? "Y" : "N");
         return true;
     }
-    Log.trace("%sexecWorkItem Not Found %s\n", MODULE_PREFIX, _commandList.c_str());
     return false;
 }
 
@@ -145,8 +140,6 @@ void EvaluatorSequences::service()
     if ((_linesDone == _lineCount) && !_repeatMode)
     {
         _inProgress = false;
-        Log.trace("%sservice linesDone %d lineCount %d no repeat so stopping\n", MODULE_PREFIX, 
-            _linesDone, _lineCount);
         return;
     }
         
@@ -179,9 +172,7 @@ void EvaluatorSequences::service()
         // Line to process
         String newCmd = _commandList.substring(lineStartPos, pStr-pCommandList);
         newCmd.trim();
-        // Separator found so add command
-        Log.trace("%sservice reqLineIdx %d cmd %s\n", MODULE_PREFIX, 
-                _reqLineIdx, newCmd.c_str());
+
         if (newCmd.length() > 0)
         {
             String retStr;
@@ -202,16 +193,7 @@ void EvaluatorSequences::service()
     {
         // Separator not found so stop
         _inProgress = false;
-        Log.trace("%sservice reqLineIdx %d not found so stopping\n", MODULE_PREFIX, 
-                _reqLineIdx);
     }
-
-    // if (millis() > _lastMillis + 10000)
-    // {
-    //     _lastMillis = millis();
-    //     Log.trace("%sprocess cmdStr %s cmdIdx %d numToProc %d isEmpty %d\n", MODULE_PREFIX, _commandList.c_str(), _curCmdIdx, _numCmdsToProcess,
-    //                     _workManager.queueIsEmpty());
-    // }
 }
 
 void EvaluatorSequences::stop()

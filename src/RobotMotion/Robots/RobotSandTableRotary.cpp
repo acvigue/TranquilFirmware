@@ -68,20 +68,6 @@ bool RobotSandTableRotary::ptToActuator(AxisFloats& targetPt, AxisFloats& outAct
     // Apply this to calculate required steps
     relativePolarToSteps(relativePolarSolution, curAxisPositions, outActuator, axesParams);
 
-    // Debug
-    #ifdef DEBUG_SANDTABLE_MOTION
-        Log.trace("%sptToAct newX %F newY %F prevX %F prevY %F dist %F abs steps %F, %F minRot1 %F, minRot2 %F\n", MODULE_PREFIX, 
-                    targetPt._pt[0], 
-                    targetPt._pt[1], 
-                    curAxisPositions._axisPositionMM.getVal(0), 
-                    curAxisPositions._axisPositionMM.getVal(1), 
-                    sqrt(targetPt._pt[0]*targetPt._pt[0]+targetPt._pt[1]*targetPt._pt[1]),
-                    outActuator.getVal(0), 
-                    outActuator.getVal(1), 
-                    relativePolarSolution.getVal(0), 
-                    relativePolarSolution.getVal(1));
-    #endif
-
     return true;
 }
 
@@ -106,13 +92,6 @@ void RobotSandTableRotary::actuatorToPt(AxisInt32s& actuatorPos, AxisFloats& out
 
     outPt.setVal(0, x);
     outPt.setVal(1, y);    
-
-    // Debug
-    #ifdef DEBUG_SANDTABLE_MOTION
-    Log.trace("%sacToPt s1 %d s2 %d theta %F rho %F x %F y %F\n", MODULE_PREFIX, 
-        actuatorPos.getVal(0), actuatorPos.getVal(1),
-        theta, rho, x, y);
-    #endif
 }
 
 void RobotSandTableRotary::correctStepOverflow(AxisPosition& curPos, AxesParams& axesParams)
@@ -171,14 +150,6 @@ bool RobotSandTableRotary::cartesianToPolar(AxisFloats& targetPt, AxisFloats& ta
 	targetSoln1.setVal(0, AxisUtils::r2d(AxisUtils::wrapRadians(theta)));
 	targetSoln1.setVal(1, rho);
 
-#ifdef DEBUG_SANDTABLE_CARTESIAN_TO_POLAR
-    Log.trace("%scartesianToPolar target X%F Y%F\n", MODULE_PREFIX,
-            targetPt.getVal(0), targetPt.getVal(1));	
-    Log.trace("%scartesianToPolar %s theta %F rho %F\n", MODULE_PREFIX,
-            posValid ? "ok" : "OUT_OF_BOUNDS",
-            theta, rho);
-#endif
-
     return posValid;
 }
 
@@ -193,10 +164,6 @@ float RobotSandTableRotary::calcRelativePolar(float targetRotation, float curRot
         bestRotation = 360 + diffAngle;
     else if (diffAngle > 180)
         bestRotation = diffAngle - 360;
-#ifdef DEBUG_SANDTABLE_CARTESIAN_TO_POLAR
-    Log.trace("%scalcRelativePolar: target %F cur %F diff %F best %F\n", MODULE_PREFIX,
-            targetRotation, curRotation, diffAngle, bestRotation);
-#endif
     return bestRotation;
 }
 
@@ -229,13 +196,6 @@ void RobotSandTableRotary::relativePolarToSteps(AxisFloats& relativePolar, AxisP
     // Add to existing
     outActuator.setVal(0, curAxisPositions._stepsFromHome.getVal(0) + stepsRelTheta);
     outActuator.setVal(1, curAxisPositions._stepsFromHome.getVal(1) + stepsRelRho);
-
-    #ifdef DEBUG_SANDTABLE_CARTESIAN_TO_POLAR
-        Log.trace("%srelativePolarToSteps: stepsRel0 %d stepsRel1 %d curSteps0 %d curSteps1 %d destSteps0 %F destSteps1 %F inTheta %F inRho %F\n",
-                MODULE_PREFIX,
-                stepsRelTheta, stepsRelRho, curAxisPositions._stepsFromHome.getVal(0), curAxisPositions._stepsFromHome.getVal(1),
-                outActuator.getVal(0), outActuator.getVal(1), relativePolar.getVal(0), relativePolar.getVal(1));
-    #endif
 }
 
 void RobotSandTableRotary::actuatorToPolar(AxisInt32s& actuatorCoords, AxisFloats& polarCoords, AxesParams& axesParams)
@@ -256,9 +216,6 @@ void RobotSandTableRotary::actuatorToPolar(AxisInt32s& actuatorCoords, AxisFloat
         int32_t maxStepsRho = maxLinear * axesParams.getStepsPerUnit(1);
         float currentRho = float(linearStepsFromHome) / float(maxStepsRho);
         polarCoords.setVal(1, currentRho);
-
-        // Log.trace("actuatorToPolar c0 %F c1 %F alphaSteps %d alphaDegs %F linStpHm %d rotD %F lin %F\n", actuatorCoords[0], actuatorCoords[1],
-        //     alphaSteps, alphaDegs, linearStepsFromHome, polarCoordsAzFirst[0] * 180 / M_PI, polarCoordsAzFirst[1]);
     }
 
 void RobotSandTableRotary::convertCoords(RobotCommandArgs& cmdArgs, AxesParams& axesParams)

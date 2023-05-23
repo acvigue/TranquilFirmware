@@ -126,20 +126,14 @@ public:
 
     void process()
     {
-        // Log.trace("StepBuf getPos %d putPos %d count %d", _stepBufPos._getPos, _stepBufPos._putPos, _stepBufPos.count());
-
         // Get
         for (int i = 0; i < 5; i++)
         {
             // Check if can get
             if (!_stepBufPos.canGet())
             {
-                // Log.trace("Process can't get");
                 return;
             }
-
-            //TestOutputStepInf inf = getStepInf();
-            //Log.trace("W\t%lu\t%d\t%d", inf._micros, inf._pin, inf._val ? 1 : 0);
         }
     }
 };

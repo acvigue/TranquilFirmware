@@ -392,7 +392,6 @@ bool MotionHoming::extractAndExecNextCmd(AxesParams &axesParams, String& debugCm
                 int feedrateStepsPerSec = getFeedrate(_homingStrPos, axesParams, 0, axesParams.getMaxStepRatePerSec(0));
                 if (feedrateStepsPerSec > 0)
                 {
-                    Log.trace("%sFeedrate set to %d steps per sec\n", MODULE_PREFIX, feedrateStepsPerSec);
                     _feedrateStepsPerSecForHoming = feedrateStepsPerSec;
                 }
             }
