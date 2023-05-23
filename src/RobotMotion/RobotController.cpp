@@ -10,7 +10,6 @@
 #include "RobotCommandArgs.h"
 
 // Robot types
-#include "Robots/RobotSandTableScara.h"
 #include "Robots/RobotSandTableRotary.h"
 
 RobotController::RobotController()
@@ -35,15 +34,7 @@ bool RobotController::init(const char* configStr)
 
     // Get the robot geometry from the config
     String robotModel = robotGeom.getString("model", "");
-    if (robotModel.equalsIgnoreCase("SingleArmScara"))
-    {
-        Log.notice("Constructing %s\n", robotModel.c_str());
-        _pRobot = new RobotSandTableScara(robotModel.c_str(), _motionHelper);
-        if (!_pRobot)
-            return false;
-        _pRobot->init(configStr);
-    }
-    else if (robotModel.equalsIgnoreCase("SandBotRotary"))
+    if (robotModel.equalsIgnoreCase("SandBotRotary"))
     {
         Log.notice("Constructing %s\n", robotModel.c_str());
         _pRobot = new RobotSandTableRotary(robotModel.c_str(), _motionHelper);
