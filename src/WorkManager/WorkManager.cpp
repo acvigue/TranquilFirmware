@@ -323,6 +323,12 @@ void WorkManager::reconfigure() {
             RobotConfigurations::getNthRobotTypeName(0, robotType);
         // Set the default robot type
         robotConfigStr = RobotConfigurations::getConfig(robotType.c_str());
+        String robotConfig = "{\"robotConfig\":";
+        robotConfig += robotConfigStr;
+        robotConfig += ",\"cmdSched\":{\"jobs\":[]},\"name\":\"Tranquil\"}";
+        _robotConfig.setConfigData(robotConfig.c_str());
+        _robotConfig.writeConfig();
+        esp_restart();
     }
 
     // Init robot controller and workflow manager

@@ -18,7 +18,7 @@
 #include "FastLED_RGBW.h"
 
 #define FASTLED_ESP32_I2S true
-#define LED_PIN 4
+#define LED_PIN 5
 
 static const char* MODULE_PREFIX = "LedStrip: ";
 

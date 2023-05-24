@@ -357,6 +357,5 @@ void RestAPISystem::apiUploadToFileManComplete(String &reqStr, String &respStr) 
 // Upload file to file system - part of file (from HTTP POST file)
 void RestAPISystem::apiUploadToFileManPart(String &req, String &filename, size_t contentLen, size_t index, uint8_t *data, size_t len,
                                            bool finalBlock) {
-    Log.verbose("%sapiUpToFileMan %d, %d, %d, %d\n", MODULE_PREFIX, contentLen, index, len, finalBlock);
     if (contentLen > 0) _fileManager.uploadAPIBlockHandler("", req, filename, contentLen, index, data, len, finalBlock);
 }

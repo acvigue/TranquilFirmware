@@ -75,65 +75,46 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
 
     // Init SD if enabled
     if (_enableSD) {
-        // Get settings
-        String pinName = fsConfig.getString("sdMOSI", "");
-        int sdMOSIPin = ConfigPinMap::getPinFromName(pinName.c_str());
-        pinName = fsConfig.getString("sdMISO", "");
-        int sdMISOPin = ConfigPinMap::getPinFromName(pinName.c_str());
-        pinName = fsConfig.getString("sdCLK", "");
-        int sdCLKPin = ConfigPinMap::getPinFromName(pinName.c_str());
-        pinName = fsConfig.getString("sdCS", "");
-        int sdCSPin = ConfigPinMap::getPinFromName(pinName.c_str());
+        sdmmc_card_t* pCard;
+        esp_err_t ret;
 
-        // Check valid
-        if (sdMOSIPin == -1 || sdMISOPin == -1 || sdCLKPin == -1 || sdCSPin == -1) {
-            Log.warning("%ssetup SD pins invalid\n", MODULE_PREFIX);
+        esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+            .format_if_mount_failed = true,
+            .max_files = 5,
+            .allocation_unit_size = 16 * 1024,
+        };
+
+        const char mount_point[] = "/sd";
+
+        sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+        host.slot = 1;
+        host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
+        sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
+        slot_config.width = 1;
+        slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
+
+        ret = esp_vfs_fat_sdmmc_mount(mount_point, &host, &slot_config, &mount_config, &pCard);
+
+        if (ret != ESP_OK) {
+            if (ret == ESP_FAIL)
+                Log.warning("%ssetup failed mount SD\n", MODULE_PREFIX);
+            else
+                Log.warning("%ssetup failed to init SD (error %s)\n", MODULE_PREFIX, esp_err_to_name(ret));
         } else {
-            sdmmc_card_t* pCard;
-            esp_err_t ret;
+            _pSDCard = pCard;
+            Log.notice("%ssetup SD ok\n", MODULE_PREFIX);
+            // Default to SD
+            _defaultToSPIFFS = false;
+            _sdIsOk = true;
 
-            esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-                .format_if_mount_failed = false,
-                .max_files = 5,
-                .allocation_unit_size = 16 * 1024,
-            };
-
-            const char mount_point[] = "/sd";
-
-            sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-            spi_bus_config_t bus_cfg = {
-                .mosi_io_num = sdMOSIPin,
-                .miso_io_num = sdMISOPin,
-                .sclk_io_num = sdCLKPin,
-                .quadwp_io_num = -1,
-                .quadhd_io_num = -1,
-                .max_transfer_sz = 4000,
-            };
-            ret = spi_bus_initialize(SPI3_HOST, &bus_cfg, SDSPI_DEFAULT_DMA);
-            if (ret != ESP_OK) {
-                Log.warning("%ssetup failed bus initialization\n", MODULE_PREFIX);
-                return;
-            }
-
-            // This initializes the slot without card detect (CD) and write protect (WP) signals.
-            // Modify slot_config.gpio_cd and slot_config.gpio_wp if your board has these signals.
-            sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
-            slot_config.gpio_cs = (gpio_num_t) sdCSPin;
-            slot_config.host_id = SPI3_HOST;
-
-            ret = esp_vfs_fat_sdspi_mount(mount_point, &host, &slot_config, &mount_config, &pCard);
-
-            if (ret != ESP_OK) {
-                if (ret == ESP_FAIL)
-                    Log.warning("%ssetup failed mount SD\n", MODULE_PREFIX);
-                else
-                    Log.warning("%ssetup failed to init SD (error %s)\n", MODULE_PREFIX, esp_err_to_name(ret));
-            } else {
-                _pSDCard = pCard;
-                Log.notice("%ssetup SD ok\n", MODULE_PREFIX);
-                // Default to SD
-                _defaultToSPIFFS = false;
-                _sdIsOk = true;
+            // Check if we have a manifest file
+            struct stat st;
+            if (stat("/sd/manifest.json", &st) != 0) {
+                Log.notice("%s No manifest file found, creating empty manifest.", MODULE_PREFIX);
+                FILE *pTmpFile = fopen("/sd/manifest.json", "w");
+                const char *fileData = "{\"patterns\":[],\"playlists\":[]}";
+                fwrite(fileData, 1, 31, pTmpFile);
+                fclose(pTmpFile);
             }
         }
     }
@@ -394,7 +375,6 @@ void FileManager::uploadAPIBlocksComplete() {
 
 void FileManager::uploadAPIBlockHandler(const char* fileSystem, const String& req, const String& filename, int fileLength, size_t index,
                                         uint8_t* data, size_t len, bool finalBlock) {
-
     // Check file system supported
     String nameOfFS;
     if (!checkFileSystem(String(fileSystem), nameOfFS)) return;
@@ -403,24 +383,25 @@ void FileManager::uploadAPIBlockHandler(const char* fileSystem, const String& re
     xSemaphoreTake(_fileSysMutex, portMAX_DELAY);
     String tempFileName = "/__tmp__";
     String tmpRootFilename = getFilePath(nameOfFS, tempFileName);
-    FILE* pFile = NULL;
 
     // Check if we should overwrite or append
-    if (index > 0)
-        pFile = fopen(tmpRootFilename.c_str(), "ab");
-    else
-        pFile = fopen(tmpRootFilename.c_str(), "wb");
-    if (!pFile) {
+    if (index == 0) { 
+        pChunkedFile = NULL;
+        pChunkedFile = fopen(tmpRootFilename.c_str(), "wb");
+    }
+
+    if (!pChunkedFile) {
         xSemaphoreGive(_fileSysMutex);
         return;
     }
 
     // Write file block to temporary file
-    size_t bytesWritten = fwrite(data, 1, len, pFile);
-    fclose(pFile);
+    size_t bytesWritten = fwrite(data, 1, len, pChunkedFile);
 
     // Rename if last block
     if (finalBlock) {
+        fclose(pChunkedFile);
+        pChunkedFile = NULL;
         // Check if destination file exists before renaming
         struct stat st;
         String rootFilename = getFilePath(nameOfFS, filename);
@@ -476,6 +457,7 @@ bool FileManager::chunkedFileStart(const String& fileSystemStr, const String& fi
         xSemaphoreGive(_fileSysMutex);
         return false;
     }
+    pChunkedFile = fopen(rootFilename.c_str(), "r");
     _chunkedFileLen = st.st_size;
     xSemaphoreGive(_fileSysMutex);
 

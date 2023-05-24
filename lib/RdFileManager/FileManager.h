@@ -17,6 +17,8 @@ private:
     bool _sdIsOk;
     bool _cachedFileListValid;
 
+    FILE* pChunkedFile = NULL;
+
     // SD card
     void* _pSDCard;
 

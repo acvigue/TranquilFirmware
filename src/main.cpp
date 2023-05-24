@@ -100,9 +100,9 @@ static const char* hwConfigJSON = {
     "\"wifiEnabled\":1,"
     "\"webServerEnabled\":1,"
     "\"webServerPort\":80,"
-    "\"OTAUpdate\":{\"enabled\":1,\"manifestURL\":\"https://pub-085564545d0642ad824517a59d8b1c10.r2.dev/manifest.json\"},"
+    "\"OTAUpdate\":{\"enabled\":1,\"manifestURL\":\"https://tranquilapi.fiftytwo.workers.dev/ota/manifest.json\"},"
     "\"ntpConfig\":{\"ntpServer\":\"pool.ntp.org\",\"ntpTimezone\":\"EST5EDT,M3.2.0,M11.1.0\"},"
-    "\"defaultRobotType\":\"SandTableScara\""
+    "\"defaultRobotType\":\"TranquilSmall\""
     "}"};
 
 // Config for hardware
@@ -157,9 +157,15 @@ void ledTaskFunc(void* parameter) {
 
 // Setup
 void setup() {
+    pinMode(15, INPUT_PULLUP);
+    pinMode(2, INPUT_PULLUP);
+    pinMode(4, INPUT_PULLUP);
+    pinMode(12, INPUT_PULLUP);
+    pinMode(13, INPUT_PULLUP);
+
     // Logging
     Serial.begin(115200);
-    Log.begin(LOG_LEVEL_TRACE, &Serial);
+    Log.begin(LOG_LEVEL_WARNING, &Serial);
 
     // Message
     Log.notice("%s %s (built %s %s)\n", systemType, systemVersion, buildDate, buildTime);
@@ -167,14 +173,14 @@ void setup() {
     // Robot config
     robotConfig.setup();
 
-    // File system
-    fileManager.setup(robotConfig, "robotConfig/fileManager");
-
     // WiFi Config
     wifiConfig.setup();
 
     // WireGuard Config
     wireGuardConfig.setup();
+
+    // File system
+    fileManager.setup(robotConfig, "robotConfig/fileManager");
 
     // OTA update
     otaUpdate.setup(hwConfig, systemType, systemVersion);

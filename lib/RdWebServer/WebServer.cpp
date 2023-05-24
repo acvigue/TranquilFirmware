@@ -120,11 +120,15 @@ void WebServer::addEndpoints(RestAPIEndpoints &endpoints) {
 
     // Handle 404 errors
     _pServer->onNotFound([](AsyncWebServerRequest *request) {
-        Log.notice("%s not found %s host %s\n", MODULE_PREFIX, request->url().c_str(), request->host().c_str());
-        AsyncWebServerResponse *response = request->beginResponse(302);
-        response->addHeader("Location", "http://8.8.4.4/");
-        response->addHeader("Cache-Control", "no-cache");
-        request->send(response);
+        if(WiFi.getMode() == WIFI_AP) {
+            AsyncWebServerResponse *response = request->beginResponse(302);
+            response->addHeader("Location", "http://8.8.4.4/");
+            response->addHeader("Cache-Control", "no-cache");
+            request->send(response);
+        } else {
+            AsyncWebServerResponse *response = request->beginResponse(404);
+            request->send(response);
+        }
     });
 }
 
