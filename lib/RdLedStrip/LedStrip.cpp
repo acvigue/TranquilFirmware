@@ -25,7 +25,6 @@ static const char* MODULE_PREFIX = "LedStrip: ";
 LedStrip::LedStrip(ConfigBase& ledNvValues) : _ledNvValues(ledNvValues) {
     _isSetup = false;
     _isSleeping = false;
-    _ledPin = -1;
 }
 
 CRGBW LedStrip::getRGBWFromRGB(CRGB rgb) {
@@ -80,32 +79,16 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
     // Get LED config
     ConfigBase ledConfig(pConfig->getString(ledStripName, "").c_str());
 
-    // LED Strip Negative PWM Pin
-    String pinStr = ledConfig.getString("ledPin", "");
-    int ledPin = -1;
-    if (pinStr.length() != 0) ledPin = ConfigPinMap::getPinFromName(pinStr.c_str());
-
     int ledCount = ledConfig.getLong("ledCount", 0);
     _ledIsRGBW = ledConfig.getLong("ledRGBW", 0);
-
-    _ledAngleOffset = ledConfig.getLong("ledAngleOffset", 0);
 
     // Ambient Light Sensor Pin
     int sensorEnabled = ledConfig.getLong("tslEnabled", 0);
     int sensorSDA = ledConfig.getLong("tslSDA", 0);
     int sensorSCL = ledConfig.getLong("tslSCL", 0);
 
-    Log.notice("%sLED pin %d (RGBW %d) TSL enabled: %d TSL SDA: %d TSL SCL: %d count %d\n", MODULE_PREFIX, ledPin, _ledIsRGBW, sensorEnabled,
+    Log.notice("%sLEDs (RGBW %d) TSL enabled: %d TSL SDA: %d TSL SCL: %d count %d\n", MODULE_PREFIX, _ledIsRGBW, sensorEnabled,
                sensorSDA, sensorSCL, ledCount);
-    // Sensor pin isn't necessary for operation.
-    if (ledPin == -1) return;
-
-    // Setup led pin
-    if (_isSetup && (ledPin != _ledPin)) {
-    } else {
-        _ledPin = ledPin;
-        _ledCount = ledCount;
-    }
 
     // Setup the sensor
     _sensorEnabled = sensorEnabled;
@@ -143,6 +126,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
         _secGreenVal = 127;
         _secBlueVal = 127;
         _effectID = 0;
+        _ledAngleOffset = 0;
         updateNv();
     } else {
         _ledOn = _ledNvValues.getLong("ledOn", 0) == 1;
@@ -158,6 +142,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
         _secGreenVal = _ledNvValues.getLong("secGreenVal", 127);
         _secBlueVal = _ledNvValues.getLong("secBlueVal", 127);
         _autoDimStrength = _ledNvValues.getLong("autoDimStrength", 15);
+        _ledAngleOffset = _ledNvValues.getLong("ledAngleOffset", 0);
     }
     if (_ledIsRGBW) {
         _leds = new CRGBW[_ledCount];
@@ -246,6 +231,11 @@ void LedStrip::updateLedFromConfig(const char* pLedJson) {
         _autoDimStrength = autoDimStrength;
         changed = true;
     }
+    int ledAngleOffset = RdJson::getLong("ledAngleOffset", 0, pLedJson);
+    if(ledAngleOffset != _ledAngleOffset) {
+        _ledAngleOffset = ledAngleOffset;
+        changed = true;
+    }
 
     if (changed) ledConfigChanged = true;
 }
@@ -288,6 +278,8 @@ String LedStrip::getCurrentConfigStr() {
     jsonStr += _sensorEnabled == 1 ? (_autoDim ? "1" : "0") : "-1";
     jsonStr += ",\"autoDimStrength\":";
     jsonStr += _autoDimStrength;
+    jsonStr += ",\"ledAngleOffset\":";
+    jsonStr += _ledAngleOffset;
     jsonStr += "}";
     return jsonStr;
 }
@@ -476,6 +468,8 @@ void LedStrip::updateNv() {
     jsonStr += "\"autoDim\":";
     jsonStr += _sensorEnabled == 1 ? (_autoDim ? "1" : "0") : "-1";
     jsonStr += ",\"autoDimStrength\":";
+    jsonStr += _autoDimStrength;
+    jsonStr += ",\"ledAngleOffset\":";
     jsonStr += _autoDimStrength;
     jsonStr += "}";
     _ledNvValues.setConfigData(jsonStr.c_str());

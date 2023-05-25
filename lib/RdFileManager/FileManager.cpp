@@ -75,6 +75,7 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
 
     // Init SD if enabled
     if (_enableSD) {
+        int sdLanes = fsConfig.getLong("sdLanes", 1);
         sdmmc_card_t* pCard;
         esp_err_t ret;
 
@@ -90,7 +91,7 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
         host.slot = 1;
         host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
         sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
-        slot_config.width = 1;
+        slot_config.width = sdLanes;
         slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
 
         ret = esp_vfs_fat_sdmmc_mount(mount_point, &host, &slot_config, &mount_config, &pCard);

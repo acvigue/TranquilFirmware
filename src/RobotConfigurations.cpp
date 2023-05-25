@@ -11,7 +11,7 @@ const char *RobotConfigurations::_robotConfigs[] = {
     "\"axis0\":{\"maxSpeed\":15,\"maxAcc\":25,\"maxRPM\":4,\"stepsPerRot\":38400,\"stepPin\":\"19\",\"dirnPin\":\"21\",\"dirnRev\":\"1\","
     "\"endStop0\":{\"sensePin\":\"22\",\"actLvl\":0,\"inputType\":\"INPUT\"}},\"axis1\":{\"maxSpeed\":15,\"maxAcc\":25,\"maxRPM\":30,\"stepsPerRot\":"
     "3200,\"unitsPerRot\":40.5,\"maxVal\":145,\"stepPin\":\"27\",\"dirnRev\":\"1\",\"dirnPin\":\"3\",\"endStop0\":{\"sensePin\":\"23\",\"actLvl\":0,"
-    "\"inputType\":\"INPUT\"}}},\"fileManager\":{\"spiffsEnabled\":1,\"spiffsFormatIfCorrupt\":1,\"sdEnabled\":1},\"ledStrip\":{\"ledPin\":\"5\","
-    "\"ledRGBW\":1,\"ledAngleOffset\":2,\"ledCount\":\"143\",\"tslEnabled\":\"1\",\"tslSDA\":\"16\",\"tslSCL\":\"17\"}}"};
+    "\"inputType\":\"INPUT\"}}},\"fileManager\":{\"spiffsEnabled\":1,\"spiffsFormatIfCorrupt\":1,\"sdEnabled\":1,\"sdLanes\":4},\"ledStrip\":{"
+    "\"ledRGBW\":1,\"ledCount\":\"143\",\"tslEnabled\":\"1\",\"tslSDA\":\"16\",\"tslSCL\":\"17\"}}"};
 
 const int RobotConfigurations::_numRobotConfigurations = sizeof(RobotConfigurations::_robotConfigs) / sizeof(const char *);

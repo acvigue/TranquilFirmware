@@ -39,7 +39,6 @@ class LedStrip {
 
     bool _isSetup;
     bool _isSleeping;
-    int _ledPin;
     int _ledCount;
     int _sensorEnabled;
     int _autoDimStrength;
