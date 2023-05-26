@@ -194,6 +194,9 @@ void setup() {
     // Tranquil API config
     tranquilConfig.setup();
 
+    // Security config
+    securityConfig.setup();
+
     // WiFi Manager
     wifiManager.setup(hwConfig, &wifiConfig, systemType);
 
