@@ -12,7 +12,6 @@
 
 class StepperMotor;
 class EndStop;
-class Servo;
 class AxisMinMaxBools;
 
 class RampGenIO
@@ -20,8 +19,6 @@ class RampGenIO
 private:
     // Stepper motors
     StepperMotor* _stepperMotors[RobotConsts::MAX_AXES];
-    // Servo motors
-    Servo* _servoMotors[RobotConsts::MAX_AXES];
     // End stops
     EndStop* _endStops[RobotConsts::MAX_AXES][RobotConsts::MAX_ENDSTOPS_PER_AXIS];
 
@@ -65,9 +62,6 @@ public:
 
 //     // Step (blocking)
 //     void stepSynch(int axisIdx, bool direction);
-
-//     // Jump (servo)
-//     void jump(int axisIdx, long targetPosition);
 
 //     // Endstops
 //     bool isEndStopValid(int axisIdx, int endStopIdx);

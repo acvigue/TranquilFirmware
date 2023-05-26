@@ -239,7 +239,6 @@ bool MotionHelper::moveTo(RobotCommandArgs &args)
         _convertCoordsFn(args, _axesParams);
     // Fill in the destPos for axes for which values not specified
     // Handle relative motion override if present
-    // Don't use servo values for computing distance to travel
     AxisFloats destPos = args.getPointMM();
     bool includeDist[RobotConsts::MAX_AXES];
     for (int i = 0; i < RobotConsts::MAX_AXES; i++)

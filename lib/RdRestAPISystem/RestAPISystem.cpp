@@ -10,13 +10,14 @@ static const char *MODULE_PREFIX = "RestAPISystem: ";
 String RestAPISystem::_systemVersion;
 
 RestAPISystem::RestAPISystem(WiFiManager &wifiManager, WireGuardManager &wireGuardManager, RdOTAUpdate &otaUpdate, FileManager &fileManager,
-                             NTPClient &ntpClient, ConfigBase &hwConfig, ConfigBase &tranquilConfig, ConfigBase &securityConfig,
+                             NTPClient &ntpClient, CommandScheduler &commandScheduler, ConfigBase &hwConfig, ConfigBase &tranquilConfig, ConfigBase &securityConfig,
                              const char *systemType, const char *systemVersion)
     : _wifiManager(wifiManager),
       _wireGuardManager(wireGuardManager),
       _otaUpdate(otaUpdate),
       _fileManager(fileManager),
       _ntpClient(ntpClient),
+      _commandScheduler(commandScheduler),
       _hwConfig(hwConfig),
       _tranquilConfig(tranquilConfig),
       _securityConfig(securityConfig) {
@@ -94,6 +95,16 @@ void RestAPISystem::setup(RestAPIEndpoints &endpoints) {
                           std::bind(&RestAPISystem::apiPostSecurityConfig, this, std::placeholders::_1, std::placeholders::_2),
                           "Set security configuration", "application/json", NULL, true, NULL,
                           std::bind(&RestAPISystem::apiPostSecurityConfigBody, this, std::placeholders::_1, std::placeholders::_2,
+                                    std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+    
+    // Scheduler settings
+    endpoints.addEndpoint("settings/scheduler", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
+                          std::bind(&RestAPISystem::apiGetSchedulerConfig, this, std::placeholders::_1, std::placeholders::_2),
+                          "Get scheduler configuration");
+    endpoints.addEndpoint("settings/scheduler", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_POST,
+                          std::bind(&RestAPISystem::apiPostSchedulerConfig, this, std::placeholders::_1, std::placeholders::_2),
+                          "Set scheduler configuration", "application/json", NULL, true, NULL,
+                          std::bind(&RestAPISystem::apiPostSchedulerConfigBody, this, std::placeholders::_1, std::placeholders::_2,
                                     std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 }
 
@@ -251,6 +262,36 @@ void RestAPISystem::apiPostNTPConfigBody(String &reqStr, uint8_t *pData, size_t 
     }
 }
 
+// MARK: Scheduler
+void RestAPISystem::apiGetSchedulerConfig(String &reqStr, String &respStr) {
+    // Get NTP config
+    String configStr;
+    _commandScheduler.getConfig(configStr);
+    configStr = "\"scheduler\":" + configStr;
+    Utils::setJsonBoolResult(respStr, true, configStr.c_str());
+}
+
+void RestAPISystem::apiPostSchedulerConfig(String &reqStr, String &respStr) {
+    Log.notice("%sPostSchedulerConfig %s\n", MODULE_PREFIX, reqStr.c_str());
+    // Result
+    Utils::setJsonBoolResult(respStr, true);
+}
+
+void RestAPISystem::apiPostSchedulerConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total) {
+    Log.notice("%sPostSchedulerConfigBody len %d\n", MODULE_PREFIX, len);
+
+    if (index == 0) {
+        memset(_tmpReqBodyBuf, 0, 600);
+    }
+
+    memcpy(_tmpReqBodyBuf + index, pData, len);
+
+    if (index + len >= total) {
+        // Store the settings
+        _commandScheduler.setConfig(_tmpReqBodyBuf, total);
+    }
+}
+
 // MARK: Security
 void RestAPISystem::apiGetSecurityConfig(String &reqStr, String &respStr) {
     // Get config
@@ -292,6 +333,7 @@ void RestAPISystem::apiPostSecurityConfigBody(String &reqStr, uint8_t *pData, si
         _securityConfig.writeConfig();
     }
 }
+
 
 // MARK: Tranquil
 void RestAPISystem::apiGetTranquilConfig(String &reqStr, String &respStr) {

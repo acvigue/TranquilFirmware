@@ -11,6 +11,7 @@
 #include "RdOTAUpdate.h"
 #include "RestAPIEndpoints.h"
 #include "WireGuardManager.h"
+#include "CommandScheduler.h"
 
 class RestAPISystem {
    private:
@@ -31,6 +32,7 @@ class RestAPISystem {
     RdOTAUpdate &_otaUpdate;
     FileManager &_fileManager;
     NTPClient &_ntpClient;
+    CommandScheduler &_commandScheduler;
     ConfigBase &_hwConfig;
     ConfigBase &_tranquilConfig;
     ConfigBase &_securityConfig;
@@ -39,7 +41,7 @@ class RestAPISystem {
 
    public:
     RestAPISystem(WiFiManager &wifiManager, WireGuardManager &wireGuardManager, RdOTAUpdate &otaUpdate, FileManager &fileManager,
-                  NTPClient &ntpClient, ConfigBase &hwConfig, ConfigBase &tranquilConfig, ConfigBase &securityConfig, const char *systemType, const char *systemVersion);
+                  NTPClient &ntpClient, CommandScheduler &commandScheduler, ConfigBase &hwConfig, ConfigBase &tranquilConfig, ConfigBase &securityConfig, const char *systemType, const char *systemVersion);
 
     // Setup and status
     void setup(RestAPIEndpoints &endpoints);
@@ -77,6 +79,11 @@ class RestAPISystem {
     void apiGetSecurityConfig(String &reqStr, String &respStr);
     void apiPostSecurityConfig(String &reqStr, String &respStr);
     void apiPostSecurityConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total);
+
+    //Scheduler settings
+    void apiGetSchedulerConfig(String &reqStr, String &respStr);
+    void apiPostSchedulerConfig(String &reqStr, String &respStr);
+    void apiPostSchedulerConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total);
 
     // NTP settings
     void apiGetNTPConfig(String &reqStr, String &respStr);

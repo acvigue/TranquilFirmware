@@ -31,8 +31,6 @@ class AxisParams
     float _maxVal;
     bool _isPrimaryAxis;
     bool _isDominantAxis;
-    // A servo axis is one which does not require blockwise stepping to a destination
-    bool _isServoAxis;
     float _homeOffsetVal;
     long _homeOffSteps;
 
@@ -56,7 +54,6 @@ class AxisParams
         _maxVal = 0;
         _isPrimaryAxis = true;
         _isDominantAxis = false;
-        _isServoAxis = false;
         _homeOffsetVal = homeOffsetVal_default;
         _homeOffSteps = homeOffSteps_default;
     }
@@ -98,7 +95,6 @@ class AxisParams
         _maxVal = float(RdJson::getDouble("maxVal", 0, _maxValValid, axisJSON));
         _isDominantAxis = RdJson::getLong("isDominantAxis", 0, axisJSON) != 0;
         _isPrimaryAxis = RdJson::getLong("isPrimaryAxis", 1, axisJSON) != 0;
-        _isServoAxis = RdJson::getLong("isServoAxis", 0, axisJSON) != 0;
         _homeOffsetVal = float(RdJson::getDouble("homeOffsetVal", 0, axisJSON));
         _homeOffSteps = RdJson::getLong("homeOffSteps", 0, axisJSON);
     }
@@ -107,7 +103,7 @@ class AxisParams
     {
         Log.notice("Axis%d params maxSpeed %F, acceleration %F, stepsPerRot %F, unitsPerRot %F, maxRPM %F\n",
                    axisIdx, _maxSpeedMMps, _maxAccelMMps2, _stepsPerRot, _unitsPerRot, _maxRPM);
-        Log.notice("Axis%d params minVal %F (%d), maxVal %F (%d), isDominant %d, isServo %d, homeOffVal %F, homeOffSteps %d\n",
-                   axisIdx, _minVal, _minValValid, _maxVal, _maxValValid, _isDominantAxis, _isServoAxis, _homeOffsetVal, _homeOffSteps);
+        Log.notice("Axis%d params minVal %F (%d), maxVal %F (%d), isDominant %d, homeOffVal %F, homeOffSteps %d\n",
+                   axisIdx, _minVal, _minValValid, _maxVal, _maxValValid, _isDominantAxis, _homeOffsetVal, _homeOffSteps);
     }
 };

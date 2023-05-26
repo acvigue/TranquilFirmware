@@ -88,6 +88,9 @@ RestAPIEndpoints restAPIEndpoints;
 #include <RdOTAUpdate.h>
 RdOTAUpdate otaUpdate;
 
+#include "CommandScheduler.h"
+CommandScheduler commandScheduler;
+
 // Hardware config
 static const char* hwConfigJSON = {
     "{"
@@ -122,13 +125,16 @@ ConfigNVS tranquilConfig("tranquil", 600);
 // Config for Security API
 ConfigNVS securityConfig("security", 100);
 
+// Config for scheduler
+ConfigNVS schedulerConfig("scheduler", 500);
+
 // Web server
 #include "WebServer.h"
 WebServer webServer(securityConfig);
 
 // REST API System
 #include "RestAPISystem.h"
-RestAPISystem restAPISystem(wifiManager, wireGuardManager, otaUpdate, fileManager, ntpClient, hwConfig, tranquilConfig, securityConfig, systemType, systemVersion);
+RestAPISystem restAPISystem(wifiManager, wireGuardManager, otaUpdate, fileManager, ntpClient, commandScheduler, hwConfig, tranquilConfig, securityConfig, systemType, systemVersion);
 
 // Config for LED Strip
 ConfigNVS ledStripConfig("ledStrip", 200);
@@ -168,7 +174,7 @@ void setup() {
 
     // Logging
     Serial.begin(115200);
-    Log.begin(LOG_LEVEL_WARNING, &Serial);
+    Log.begin(LOG_LEVEL_INFO, &Serial);
 
     // Message
     Log.notice("%s %s (built %s %s)\n", systemType, systemVersion, buildDate, buildTime);
@@ -197,8 +203,14 @@ void setup() {
     // Security config
     securityConfig.setup();
 
+    //Scheduler config
+    schedulerConfig.setup();
+
     // WiFi Manager
     wifiManager.setup(hwConfig, &wifiConfig, systemType);
+
+    // Command scheduler
+    commandScheduler.setup(&schedulerConfig, restAPIEndpoints);
 
     // WireGuard Manager
     wireGuardManager.setup(&wireGuardConfig);
@@ -261,7 +273,8 @@ void loop() {
         _workManager.queryStatus(newStatus);
         webServer.sendAsyncEvent(newStatus.c_str(), "status");
     }
-
+    
+    commandScheduler.service();
     _workManager.service();
     _robotController.service();
 

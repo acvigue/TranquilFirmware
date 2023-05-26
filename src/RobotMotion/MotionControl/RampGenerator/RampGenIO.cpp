@@ -2,7 +2,6 @@
 // Rob Dobson 2016-18
 
 #include "RampGenIO.h"
-#include <ESP32Servo.h>
 #include "AxisValues.h"
 #include "StepperMotor.h"
 #include "EndStop.h"
@@ -16,7 +15,6 @@ RampGenIO::RampGenIO()
     for (int i = 0; i < RobotConsts::MAX_AXES; i++)
     {
         _stepperMotors[i] = NULL;
-        _servoMotors[i] = NULL;
         for (int j = 0; j < RobotConsts::MAX_ENDSTOPS_PER_AXIS; j++)
             _endStops[i][j] = NULL;
     }
@@ -34,10 +32,6 @@ void RampGenIO::deinit()
     {
         delete _stepperMotors[i];
         _stepperMotors[i] = NULL;
-        if (_servoMotors[i])
-            _servoMotors[i]->detach();
-        delete _servoMotors[i];
-        _servoMotors[i] = NULL;
         for (int j = 0; j < RobotConsts::MAX_ENDSTOPS_PER_AXIS; j++)
         {
             delete _endStops[i][j];
@@ -86,19 +80,6 @@ bool RampGenIO::configureAxis(int axisIdx, const char *axisJSON)
         if ((stepPin >= 0) && ((dirnPin >= 0) || (muxPin1 >= 0)))
             _stepperMotors[axisIdx] = new StepperMotor(RobotConsts::MOTOR_TYPE_DRIVER, stepPin, dirnPin, 
                                 muxPin1, muxPin2, muxPin3, muxDirnIdx, directionReversed);
-    }
-    else
-    {
-        // Create a servo motor for the axis
-        String servoPinName = RdJson::getString("servoPin", "-1", axisJSON);
-        long servoPin = ConfigPinMap::getPinFromName(servoPinName.c_str());
-        Log.notice("%sAxis%d (servo pin %d)\n", MODULE_PREFIX, axisIdx, servoPin);
-        if ((servoPin != -1))
-        {
-            _servoMotors[axisIdx] = new Servo();
-            if (_servoMotors[axisIdx])
-                _servoMotors[axisIdx]->attach(servoPin);
-        }
     }
 
     // End stops
@@ -170,10 +151,6 @@ bool RampGenIO::configureAxis(int axisIdx, const char *axisJSON)
 // {
 //     if (axisIdx < 0 || axisIdx >= RobotConsts::MAX_AXES)
 //         return;
-
-//     if (_servoMotors[axisIdx])
-//         _servoMotors[axisIdx]->writeMicroseconds(targetPosition);
-// }
 
 // // Endstops
 // bool RampGenIO::isEndStopValid(int axisIdx, int endStopIdx)

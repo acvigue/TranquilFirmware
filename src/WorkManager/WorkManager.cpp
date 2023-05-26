@@ -325,7 +325,7 @@ void WorkManager::reconfigure() {
         robotConfigStr = RobotConfigurations::getConfig(robotType.c_str());
         String robotConfig = "{\"robotConfig\":";
         robotConfig += robotConfigStr;
-        robotConfig += ",\"cmdSched\":{\"jobs\":[]},\"name\":\"Tranquil\"}";
+        robotConfig += ",\"name\":\"Tranquil\"}";
         _robotConfig.setConfigData(robotConfig.c_str());
         _robotConfig.writeConfig();
         esp_restart();

@@ -371,7 +371,8 @@ void LedStrip::serviceStrip() {
     // Check if active
     if (!_isSetup) return;
 
-    if (_ledOn) {
+    // Make sure we are on and not sleeping
+    if (_ledOn && !_isSleeping) {
         if (_ledRealBrightness != _ledBrightness) {
             int _ledRealBrightnessInt = _ledRealBrightness;
             int _ledBrightnessInt = _ledBrightness;

@@ -9,8 +9,7 @@ static constexpr int MAX_ENDSTOPS_PER_AXIS = 2;
 typedef enum
 {
     MOTOR_TYPE_NONE,
-    MOTOR_TYPE_DRIVER,
-    MOTOR_TYPE_SERVO
+    MOTOR_TYPE_DRIVER
 } MOTOR_TYPE;
 
 static constexpr int NUMBERED_COMMAND_NONE = 0;
