@@ -11,12 +11,13 @@
 
 static const char *MODULE_PREFIX = "WorkManager: ";
 
-WorkManager::WorkManager(ConfigBase &mainConfig, ConfigBase &robotConfig, RobotController &robotController, LedStrip &ledStrip,
+WorkManager::WorkManager(ConfigBase &mainConfig, ConfigBase &robotConfig, RobotController &robotController, LedStrip &ledStrip, WireGuardManager &wireGuardManager,
                          RestAPISystem &restAPISystem, FileManager &fileManager)
     : _systemConfig(mainConfig),
       _robotConfig(robotConfig),
       _robotController(robotController),
       _ledStrip(ledStrip),
+      _wireGuardManager(wireGuardManager),
       _restAPISystem(restAPISystem),
       _fileManager(fileManager),
       _evaluatorSequences(fileManager, *this),
@@ -70,6 +71,9 @@ void WorkManager::queryStatus(String &respStr) {
         innerJsonStr += ",\"shuffleMode\":";
         innerJsonStr += (_evaluatorSequences.getShuffle() == true) ? "true" : "false";
     }
+
+    innerJsonStr += ",\"wgConn\":";
+    innerJsonStr += (_wireGuardManager.isConnected()) ? "true" : "false";
 
     if (_evaluatorFiles.isBusy()) {
         innerJsonStr += ",\"file\": \"";

@@ -13,6 +13,7 @@
 #include "LedStrip.h"
 #include "RobotCommandArgs.h"
 #include "WorkItemQueue.h"
+#include "WireGuardManager.h"
 
 class ConfigBase;
 class RobotController;
@@ -29,6 +30,7 @@ class WorkManager {
     WorkItemQueue _workItemQueue;
     RestAPISystem& _restAPISystem;
     FileManager& _fileManager;
+    WireGuardManager& _wireGuardManager;
 
     // Evaluators
     EvaluatorSequences _evaluatorSequences;
@@ -52,7 +54,7 @@ class WorkManager {
 #endif
 
    public:
-    WorkManager(ConfigBase& mainConfig, ConfigBase& robotConfig, RobotController& robotController, LedStrip& ledStrip, RestAPISystem& restAPISystem,
+    WorkManager(ConfigBase& mainConfig, ConfigBase& robotConfig, RobotController& robotController, LedStrip& ledStrip, WireGuardManager &wireGuardManager, RestAPISystem& restAPISystem,
                 FileManager& fileManager);
 
     // Check if queue can accept a work item

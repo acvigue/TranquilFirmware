@@ -149,7 +149,7 @@ RobotController _robotController;
 
 // Command interface
 #include "WorkManager/WorkManager.h"
-WorkManager _workManager(hwConfig, robotConfig, _robotController, ledStrip, restAPISystem, fileManager);
+WorkManager _workManager(hwConfig, robotConfig, _robotController, ledStrip, wireGuardManager, restAPISystem, fileManager);
 
 // REST API Robot
 #include "RestAPIRobot.h"
