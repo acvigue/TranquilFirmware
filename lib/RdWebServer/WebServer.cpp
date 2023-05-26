@@ -16,7 +16,7 @@
 
 static const char *MODULE_PREFIX = "WebServer: ";
 
-WebServer::WebServer(ConfigBase &tranquilConfig): _tranquilConfig(tranquilConfig) {
+WebServer::WebServer(ConfigBase &tranquilConfig) : _tranquilConfig(tranquilConfig) {
     _pServer = NULL;
     _begun = false;
     _webServerEnabled = false;
@@ -88,13 +88,15 @@ void WebServer::addEndpoints(RestAPIEndpoints &endpoints) {
                      // Handler for main request URL
                      [pEndpoint, this](AsyncWebServerRequest *request) {
                          // Authenticate (but allow posts to security endpoint to prevent 401 when editing)
-                         if(request->method() != HTTP_POST || request->url().indexOf("settings/security") == -1) {
-                            if (_tranquilConfig.getLong("pinEnabled", 0) == 1) {
-                                String password = _tranquilConfig.getString("pinCode", "");
-                                if (!request->authenticate("tranquil", password.c_str())) {
-                                    return request->requestAuthentication();
-                                }
-                            }
+                         if (request->method() != HTTP_POST || request->url().indexOf("settings/security") == -1) {
+                             if (_tranquilConfig.getLong("pinEnabled", 0) == 1) {
+                                 String password = _tranquilConfig.getString("pinCode", "");
+                                 if (!request->authenticate("tranquil", password.c_str())) {
+                                     AsyncWebServerResponse *response = request->beginResponse(401);
+                                     request->send(response);
+                                     return;
+                                 }
+                             }
                          }
 
                          // Default response
@@ -120,7 +122,9 @@ void WebServer::addEndpoints(RestAPIEndpoints &endpoints) {
                          if (_tranquilConfig.getLong("pinEnabled", 0) == 1) {
                              String password = _tranquilConfig.getString("pinCode", "");
                              if (!request->authenticate("tranquil", password.c_str())) {
-                                 return request->requestAuthentication();
+                                 AsyncWebServerResponse *response = request->beginResponse(401);
+                                 request->send(response);
+                                 return;
                              }
                          }
 
