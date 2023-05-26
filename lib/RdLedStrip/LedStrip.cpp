@@ -79,7 +79,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
     // Get LED config
     ConfigBase ledConfig(pConfig->getString(ledStripName, "").c_str());
 
-    int ledCount = ledConfig.getLong("ledCount", 0);
+    _ledCount = ledConfig.getLong("ledCount", 0);
     _ledIsRGBW = ledConfig.getLong("ledRGBW", 0);
 
     // Ambient Light Sensor Pin
@@ -88,7 +88,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
     int sensorSCL = ledConfig.getLong("tslSCL", 0);
 
     Log.notice("%sLEDs (RGBW %d) TSL enabled: %d TSL SDA: %d TSL SCL: %d count %d\n", MODULE_PREFIX, _ledIsRGBW, sensorEnabled,
-               sensorSDA, sensorSCL, ledCount);
+               sensorSDA, sensorSCL, _ledCount);
 
     // Setup the sensor
     _sensorEnabled = sensorEnabled;
@@ -146,12 +146,12 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
     }
     if (_ledIsRGBW) {
         _leds = new CRGBW[_ledCount];
-        _ledsRGBTemp = new CRGB[ledCount];
+        _ledsRGBTemp = new CRGB[_ledCount];
         _ledsRGB = (CRGB*)&_leds[0];
         FastLED.addLeds<WS2812B, LED_PIN>(_ledsRGB, getRGBWsize(_ledCount));
     } else {
         _leds = new CRGBW[_ledCount];
-        _ledsRGBTemp = new CRGB[ledCount];
+        _ledsRGBTemp = new CRGB[_ledCount];
         FastLED.addLeds<WS2812B, LED_PIN>(_ledsRGBTemp, _ledCount);
     }
     FastLED.setMaxPowerInVoltsAndMilliamps(5, 1500);
@@ -160,7 +160,6 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
     FastLED.show();
     FastLED.clear(true);
     FastLED.show();
-    delay(100);
 
     _isSetup = true;
     // Trigger initial write
