@@ -16,7 +16,7 @@
 
 static const char *MODULE_PREFIX = "WebServer: ";
 
-WebServer::WebServer() {
+WebServer::WebServer(ConfigBase &tranquilConfig): _tranquilConfig(tranquilConfig) {
     _pServer = NULL;
     _begun = false;
     _webServerEnabled = false;
@@ -86,7 +86,17 @@ void WebServer::addEndpoints(RestAPIEndpoints &endpoints) {
         _pServer->on(("/" + pEndpoint->_endpointStr).c_str(), webMethod,
 
                      // Handler for main request URL
-                     [pEndpoint](AsyncWebServerRequest *request) {
+                     [pEndpoint, this](AsyncWebServerRequest *request) {
+                         // Authenticate (but allow posts to security endpoint to prevent 401 when editing)
+                         if(request->method() != HTTP_POST || request->url().indexOf("settings/security") == -1) {
+                            if (_tranquilConfig.getLong("pinEnabled", 0) == 1) {
+                                String password = _tranquilConfig.getString("pinCode", "");
+                                if (!request->authenticate("tranquil", password.c_str())) {
+                                    return request->requestAuthentication();
+                                }
+                            }
+                         }
+
                          // Default response
                          String respStr("{ \"rslt\": \"unknown\" }");
 
@@ -106,21 +116,25 @@ void WebServer::addEndpoints(RestAPIEndpoints &endpoints) {
                      },
 
                      // Handler for body
-                     [pEndpoint](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+                     [pEndpoint, this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+                         if (_tranquilConfig.getLong("pinEnabled", 0) == 1) {
+                             String password = _tranquilConfig.getString("pinCode", "");
+                             if (!request->authenticate("tranquil", password.c_str())) {
+                                 return request->requestAuthentication();
+                             }
+                         }
+
                          String reqUrl = recreatedReqUrl(request);
                          pEndpoint->callbackBody(reqUrl, data, len, index, total);
                      });
 
         // Handle preflight requests
-        _pServer->on(("/" + pEndpoint->_endpointStr).c_str(), HTTP_OPTIONS,
-
-                     // Handler for main request URL
-                     [pEndpoint](AsyncWebServerRequest *request) { request->send(200); });
+        _pServer->on(("/" + pEndpoint->_endpointStr).c_str(), HTTP_OPTIONS, [pEndpoint](AsyncWebServerRequest *request) { request->send(200); });
     }
 
     // Handle 404 errors
     _pServer->onNotFound([](AsyncWebServerRequest *request) {
-        if(WiFi.getMode() == WIFI_AP) {
+        if (WiFi.getMode() == WIFI_AP) {
             AsyncWebServerResponse *response = request->beginResponse(302);
             response->addHeader("Location", "http://8.8.4.4/");
             response->addHeader("Cache-Control", "no-cache");

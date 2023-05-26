@@ -33,12 +33,13 @@ class RestAPISystem {
     NTPClient &_ntpClient;
     ConfigBase &_hwConfig;
     ConfigBase &_tranquilConfig;
+    ConfigBase &_securityConfig;
     String _systemType;
     static String _systemVersion;
 
    public:
     RestAPISystem(WiFiManager &wifiManager, WireGuardManager &wireGuardManager, RdOTAUpdate &otaUpdate, FileManager &fileManager,
-                  NTPClient &ntpClient, ConfigBase &hwConfig, ConfigBase &tranquilConfig, const char *systemType, const char *systemVersion);
+                  NTPClient &ntpClient, ConfigBase &hwConfig, ConfigBase &tranquilConfig, ConfigBase &securityConfig, const char *systemType, const char *systemVersion);
 
     // Setup and status
     void setup(RestAPIEndpoints &endpoints);
@@ -71,6 +72,11 @@ class RestAPISystem {
     void apiGetTranquilConfig(String &reqStr, String &respStr);
     void apiPostTranquilConfig(String &reqStr, String &respStr);
     void apiPostTranquilConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total);
+
+    //Security API settings
+    void apiGetSecurityConfig(String &reqStr, String &respStr);
+    void apiPostSecurityConfig(String &reqStr, String &respStr);
+    void apiPostSecurityConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total);
 
     // NTP settings
     void apiGetNTPConfig(String &reqStr, String &respStr);

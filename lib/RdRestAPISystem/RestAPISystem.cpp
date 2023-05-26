@@ -10,15 +10,16 @@ static const char *MODULE_PREFIX = "RestAPISystem: ";
 String RestAPISystem::_systemVersion;
 
 RestAPISystem::RestAPISystem(WiFiManager &wifiManager, WireGuardManager &wireGuardManager, RdOTAUpdate &otaUpdate, FileManager &fileManager,
-                             NTPClient &ntpClient, ConfigBase &hwConfig, ConfigBase &tranquilConfig, const char *systemType,
-                             const char *systemVersion)
+                             NTPClient &ntpClient, ConfigBase &hwConfig, ConfigBase &tranquilConfig, ConfigBase &securityConfig,
+                             const char *systemType, const char *systemVersion)
     : _wifiManager(wifiManager),
       _wireGuardManager(wireGuardManager),
       _otaUpdate(otaUpdate),
       _fileManager(fileManager),
       _ntpClient(ntpClient),
       _hwConfig(hwConfig),
-      _tranquilConfig(tranquilConfig) {
+      _tranquilConfig(tranquilConfig),
+      _securityConfig(securityConfig) {
     _deviceRestartPending = false;
     _deviceRestartMs = 0;
     _updateCheckPending = false;
@@ -41,6 +42,8 @@ void RestAPISystem::setup(RestAPIEndpoints &endpoints) {
                           std::bind(&RestAPISystem::apiReset, this, std::placeholders::_1, std::placeholders::_2), "Restart program");
     endpoints.addEndpoint("update", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
                           std::bind(&RestAPISystem::apiCheckUpdate, this, std::placeholders::_1, std::placeholders::_2), "Check for updates");
+    endpoints.addEndpoint("heap", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
+                          std::bind(&RestAPISystem::apiGetHeap, this, std::placeholders::_1, std::placeholders::_2), "Get free heap");
 
     // NTP settings
     endpoints.addEndpoint("settings/ntp", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
@@ -73,17 +76,24 @@ void RestAPISystem::setup(RestAPIEndpoints &endpoints) {
                           std::bind(&RestAPISystem::apiPostWireGuardConfigBody, this, std::placeholders::_1, std::placeholders::_2,
                                     std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 
-    //Tranquil API settings
+    // Tranquil API settings
     endpoints.addEndpoint("settings/tranquil", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
                           std::bind(&RestAPISystem::apiGetTranquilConfig, this, std::placeholders::_1, std::placeholders::_2),
                           "Get Tranquil configuration");
-    endpoints.addEndpoint("heap", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
-                          std::bind(&RestAPISystem::apiGetHeap, this, std::placeholders::_1, std::placeholders::_2),
-                          "Get free heap");
     endpoints.addEndpoint("settings/tranquil", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_POST,
                           std::bind(&RestAPISystem::apiPostTranquilConfig, this, std::placeholders::_1, std::placeholders::_2),
                           "Set Tranquil configuration", "application/json", NULL, true, NULL,
                           std::bind(&RestAPISystem::apiPostTranquilConfigBody, this, std::placeholders::_1, std::placeholders::_2,
+                                    std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+
+    // Security API settings
+    endpoints.addEndpoint("settings/security", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
+                          std::bind(&RestAPISystem::apiGetSecurityConfig, this, std::placeholders::_1, std::placeholders::_2),
+                          "Get security configuration");
+    endpoints.addEndpoint("settings/security", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_POST,
+                          std::bind(&RestAPISystem::apiPostSecurityConfig, this, std::placeholders::_1, std::placeholders::_2),
+                          "Set security configuration", "application/json", NULL, true, NULL,
+                          std::bind(&RestAPISystem::apiPostSecurityConfigBody, this, std::placeholders::_1, std::placeholders::_2,
                                     std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 }
 
@@ -149,9 +159,7 @@ void RestAPISystem::apiReset(String &reqStr, String &respStr) {
     _deviceRestartMs = millis();
 }
 
-void RestAPISystem::apiGetHeap(String &reqStr, String &respStr) {
-    respStr = ESP.getFreeHeap();
-}
+void RestAPISystem::apiGetHeap(String &reqStr, String &respStr) { respStr = ESP.getFreeHeap(); }
 
 // MARK: WiFi
 void RestAPISystem::apiGetWiFiConfig(String &reqStr, String &respStr) {
@@ -240,6 +248,48 @@ void RestAPISystem::apiPostNTPConfigBody(String &reqStr, uint8_t *pData, size_t 
     if (index + len >= total) {
         // Store the settings
         _ntpClient.setConfig(_tmpReqBodyBuf, total);
+    }
+}
+
+// MARK: Security
+void RestAPISystem::apiGetSecurityConfig(String &reqStr, String &respStr) {
+    // Get config
+    String configStr;
+    String innerStr = "{}";
+
+    if (_securityConfig.getConfigString().length() > 0) {
+        innerStr = _securityConfig.getConfigString();
+    }
+
+    configStr = "\"security\":" + innerStr;
+    Utils::setJsonBoolResult(respStr, true, configStr.c_str());
+}
+
+void RestAPISystem::apiPostSecurityConfig(String &reqStr, String &respStr) {
+    Log.notice("%sPostSecurityConfig %s\n", MODULE_PREFIX, reqStr.c_str());
+    // Result
+    Utils::setJsonBoolResult(respStr, true);
+}
+
+void RestAPISystem::apiPostSecurityConfigBody(String &reqStr, uint8_t *pData, size_t len, size_t index, size_t total) {
+    Log.notice("%sPostSecurityConfigBody len %d\n", MODULE_PREFIX, len);
+
+    if (index == 0) {
+        memset(_tmpReqBodyBuf, 0, 600);
+    }
+
+    memcpy(_tmpReqBodyBuf + index, pData, len);
+
+    if (index + len >= total) {
+        // Store the settings
+        if (total >= _securityConfig.getMaxLen()) return;
+        char *pTmp = new char[total + 1];
+        if (!pTmp) return;
+        memcpy(pTmp, _tmpReqBodyBuf, total);
+        pTmp[total] = 0;
+
+        _securityConfig.setConfigData(pTmp);
+        _securityConfig.writeConfig();
     }
 }
 

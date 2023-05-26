@@ -84,10 +84,6 @@ FileManager fileManager;
 #include "RestAPIEndpoints.h"
 RestAPIEndpoints restAPIEndpoints;
 
-// Web server
-#include "WebServer.h"
-WebServer webServer;
-
 // Firmware update
 #include <RdOTAUpdate.h>
 RdOTAUpdate otaUpdate;
@@ -123,9 +119,16 @@ ConfigNVS ntpConfig("ntp", 100);
 // Config for Tranquil API
 ConfigNVS tranquilConfig("tranquil", 600);
 
+// Config for Security API
+ConfigNVS securityConfig("security", 100);
+
+// Web server
+#include "WebServer.h"
+WebServer webServer(securityConfig);
+
 // REST API System
 #include "RestAPISystem.h"
-RestAPISystem restAPISystem(wifiManager, wireGuardManager, otaUpdate, fileManager, ntpClient, hwConfig, tranquilConfig, systemType, systemVersion);
+RestAPISystem restAPISystem(wifiManager, wireGuardManager, otaUpdate, fileManager, ntpClient, hwConfig, tranquilConfig, securityConfig, systemType, systemVersion);
 
 // Config for LED Strip
 ConfigNVS ledStripConfig("ledStrip", 200);
