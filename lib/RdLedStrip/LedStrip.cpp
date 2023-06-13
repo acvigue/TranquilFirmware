@@ -348,7 +348,7 @@ void LedStrip::service(float currentX, float currentY) {
                     // super low brightness
                     ledBrightness = 0;
                 } else {
-                    ledBrightness = (int) mapFloat(_luxLevel, 0.00, _autoDimStrength, 0.00, 255.00);
+                    ledBrightness = (int) mapFloat(_luxLevel, 0.00, _autoDimStrength, 0.00, 180.00);
                 }
 
                 if (_ledBrightness != ledBrightness) {
