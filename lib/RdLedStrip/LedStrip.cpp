@@ -154,7 +154,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
         _ledsRGBTemp = new CRGB[_ledCount];
         FastLED.addLeds<WS2812B, LED_PIN>(_ledsRGBTemp, _ledCount);
     }
-    FastLED.setMaxPowerInVoltsAndMilliamps(5, 1500);
+    FastLED.setMaxPowerInVoltsAndMilliamps(5, 1000);
     FastLED.setCorrection(TypicalLEDStrip);
     FastLED.setBrightness(_ledBrightness);
     FastLED.show();
@@ -348,7 +348,7 @@ void LedStrip::service(float currentX, float currentY) {
                     // super low brightness
                     ledBrightness = 0;
                 } else {
-                    ledBrightness = (int) mapFloat(_luxLevel, 0.00, _autoDimStrength, 0.00, 180.00);
+                    ledBrightness = (int) mapFloat(_luxLevel, 0.00, _autoDimStrength, 0.00, 150.00);
                 }
 
                 if (_ledBrightness != ledBrightness) {
