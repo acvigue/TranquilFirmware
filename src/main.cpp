@@ -160,7 +160,7 @@ TaskHandle_t ledTask;
 void ledTaskFunc(void* parameter) {
     for (;;) {
         ledStrip.serviceStrip();
-        delay(33);
+        vTaskDelay(pdMS_TO_TICKS(33));
     }
 }
 
