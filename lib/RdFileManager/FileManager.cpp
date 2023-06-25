@@ -114,7 +114,7 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
                 Log.notice("%s No manifest file found, creating empty manifest.", MODULE_PREFIX);
                 FILE *pTmpFile = fopen("/sd/manifest.json", "w");
                 const char *fileData = "{\"patterns\":[],\"playlists\":[]}";
-                fwrite(fileData, 1, 31, pTmpFile);
+                fwrite(fileData, 1, 30, pTmpFile);
                 fclose(pTmpFile);
             }
         }
