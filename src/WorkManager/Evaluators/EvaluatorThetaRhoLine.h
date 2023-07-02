@@ -42,6 +42,8 @@ private:
     double _bedRadiusMM;
     double _centreOffsetX;
     double _centreOffsetY;
+    double _thetaOffsetAngle;
+    bool _thetaMirrored;
 
     // Work manager
     WorkManager& _workManager;

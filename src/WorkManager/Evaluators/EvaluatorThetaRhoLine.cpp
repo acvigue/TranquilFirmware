@@ -41,6 +41,10 @@ void EvaluatorThetaRhoLine::setConfig(const char *configStr, const char* robotAt
     double sizeY = RdJson::getDouble("sizeY", 0, robotAttributes);
     double originX = RdJson::getDouble("originX", 0, robotAttributes);
     double originY = RdJson::getDouble("originY", 0, robotAttributes);
+    
+    _thetaMirrored = RdJson::getLong("thrThetaMirrored", 1, configStr) != 0;
+    _thetaOffsetAngle = RdJson::getLong("thrThetaOffsetAngle", 1, configStr);
+
     _bedRadiusMM = std::min(sizeX, sizeY) / 2;
     _centreOffsetX = sizeX / 2 - originX;
     _centreOffsetY = sizeY / 2 - originY;
@@ -80,7 +84,8 @@ bool EvaluatorThetaRhoLine::execWorkItem(WorkItem &workItem)
     // Extract the details
     String thetaStr = Utils::getNthField(workItem.getCString(), 1, '/');
     String rhoStr = Utils::getNthField(workItem.getCString(), 2, '/');
-    double newTheta = atof(thetaStr.c_str()) * -1.00 + (M_PI * .5);
+    double mirrored = _thetaMirrored ? -1.00 : 1.00;
+    double newTheta = atof(thetaStr.c_str()) * mirrored + (M_PI * _thetaOffsetAngle);
     double newRho = atof(rhoStr.c_str());
 
     // Check for an uninterpolated line
