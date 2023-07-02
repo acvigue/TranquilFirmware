@@ -55,8 +55,6 @@ void RestAPIRobot::apiPostLEDConfig(String &reqStr, String &respStr)
 
 void RestAPIRobot::apiPostSettingsBody(String& reqStr, uint8_t *pData, size_t len, size_t index, size_t total)
 {
-    Log.notice("%sPostSettingsBody len %d\n", MODULE_PREFIX, len);
-
     if (index == 0) {
         memset(_tmpReqBodyBuf, 0, 2000);
     }
@@ -65,15 +63,24 @@ void RestAPIRobot::apiPostSettingsBody(String& reqStr, uint8_t *pData, size_t le
 
     if (index + len >= total) {
         // Store the settings
+         Log.notice("%sPostSettingsBody len %d, %s\n", MODULE_PREFIX, total, _tmpReqBodyBuf);
         _workManager.setRobotConfig(_tmpReqBodyBuf, total);
     }
 }
 
 void RestAPIRobot::apiPostLEDConfigBody(String& reqStr, uint8_t *pData, size_t len, size_t index, size_t total)
 {
-    Log.notice("%sSetLedBody len %d, %s\n", MODULE_PREFIX, len, reqStr.c_str());
-    // Store the settings
-    _workManager.setLedStripConfig(pData, len);
+    if (index == 0) {
+        memset(_tmpReqBodyBuf, 0, 2000);
+    }
+
+    memcpy(_tmpReqBodyBuf + index, pData, len);
+
+    if (index + len >= total) {
+        // Store the settings
+        Log.notice("%sSetLedBody len %d, %s\n", MODULE_PREFIX, total, _tmpReqBodyBuf);
+        _workManager.setLedStripConfig(_tmpReqBodyBuf, total);
+    }
 }
 
 void RestAPIRobot::apiExec(String &reqStr, String &respStr)
