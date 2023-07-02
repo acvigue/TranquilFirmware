@@ -40,7 +40,7 @@
 const char* systemType = "Tranquil";
 
 // System version
-const char* systemVersion = "4.0.1";
+const char* systemVersion = "4.0.2";
 
 // Build date
 const char* buildDate = __DATE__;
@@ -99,7 +99,7 @@ static const char* hwConfigJSON = {
     "\"wifiEnabled\":1,"
     "\"webServerEnabled\":1,"
     "\"webServerPort\":80,"
-    "\"OTAUpdate\":{\"enabled\":1,\"manifestURL\":\"https://tranquilapi.fiftytwo.workers.dev/ota/manifest\"},"
+    "\"OTAUpdate\":{\"enabled\":1,\"manifestURL\":\"https://otaserver.vigue.me/tranquil/manifest\"},"
     "\"ntpConfig\":{\"ntpServer\":\"pool.ntp.org\",\"ntpTimezone\":\"EST5EDT,M3.2.0,M11.1.0\"},"
     "\"defaultRobotType\":\"TranquilSmall\""
     "}"};
