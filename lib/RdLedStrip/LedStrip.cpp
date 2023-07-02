@@ -152,7 +152,7 @@ void LedStrip::setup(ConfigBase* pConfig, const char* ledStripName) {
     } else {
         _leds = new CRGBW[_ledCount];
         _ledsRGBTemp = new CRGB[_ledCount];
-        FastLED.addLeds<WS2812B, LED_PIN>(_ledsRGBTemp, _ledCount);
+        FastLED.addLeds<WS2812B, LED_PIN, GRB>(_ledsRGBTemp, _ledCount);
     }
     FastLED.setMaxPowerInVoltsAndMilliamps(5, 1000);
     FastLED.setCorrection(TypicalLEDStrip);
