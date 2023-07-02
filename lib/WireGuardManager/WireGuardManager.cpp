@@ -15,10 +15,6 @@ bool WireGuardManager::isConnected() { return _wireGuard.is_initialized(); }
 
 void WireGuardManager::setup(ConfigBase *pSysConfig) {
     _pConfigBase = pSysConfig;
-
-    // {"enabled": 0, "privateKey": "VALUEHERE", "publicKey": "VALUEHERE", "psk": "VALUEHERE", "localIP": "VALUEHERE", "endpointAddress": "VALUEHERE",
-    // "endpointPort": 0}
-
     applyConfig();
 }
 
