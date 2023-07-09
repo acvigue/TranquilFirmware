@@ -228,6 +228,7 @@ void setup() {
     webServer.serveStaticFiles("/", "/spiffs/", "public, max-age=31536000");
     webServer.serveStaticFiles("/files/sd", "/sd/");
     webServer.enableAsyncEvents("/events");
+    webServer.webSocketOpen("/socket");
 
     // Led Strip Config
     ledStripConfig.setup();
@@ -271,6 +272,7 @@ void loop() {
         String newStatus;
         _workManager.queueIsEmpty();
         _workManager.queryStatus(newStatus);
+        webServer.webSocketSend((uint8_t *) newStatus.c_str(), newStatus.length());
         webServer.sendAsyncEvent(newStatus.c_str(), "status");
     }
     
