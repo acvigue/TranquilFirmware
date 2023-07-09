@@ -6,7 +6,6 @@
 #include "WiFiManager.h"
 
 #include <ArduinoLog.h>
-#include <ArduinoOTA.h>
 #include <ESPmDNS.h>
 #include <DNSServer.h>
 #include <WiFi.h>
@@ -45,20 +44,6 @@ void WiFiManager::setup(ConfigBase &hwConfig, ConfigBase *pSysConfig, const char
 
         //Erase pre-existing credentials
         WiFi.disconnect(false, true);
-
-        // If using PEAP, initialize.
-        if (_connectionMode == connectionType::peap) {
-            if (_peapIdentity.length() > 0) {
-                esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)_peapIdentity.c_str(), strlen(_peapIdentity.c_str()));
-            }
-            if (_peapUsername.length() > 0) {
-                esp_wifi_sta_wpa2_ent_set_username((uint8_t *)_peapUsername.c_str(), strlen(_peapUsername.c_str()));
-            }
-            if (_peapPassword.length() > 0) {
-                esp_wifi_sta_wpa2_ent_set_password((uint8_t *)_peapPassword.c_str(), strlen(_peapPassword.c_str()));
-            }
-            esp_wifi_sta_wpa2_ent_enable();
-        }
     }
 }
 
@@ -102,7 +87,7 @@ void WiFiManager::service() {
                 WiFi.begin(_ssid.c_str());
             } else if (_connectionMode == connectionType::peap) {
                 // EAP was initialized earlier!
-                WiFi.begin(_ssid.c_str());
+                WiFi.begin(_ssid.c_str(), WPA2_AUTH_PEAP, _peapIdentity.c_str(), _peapUsername.c_str(), _peapPassword.c_str());
             } else if (_connectionMode == connectionType::none && !_softAPStarted) {
                 //Start SoftAP
                 Log.notice("%sstarting softap (%s)\n", MODULE_PREFIX, _hostname.c_str());
@@ -121,16 +106,6 @@ void WiFiManager::service() {
         }
     } else {
         _connectAttempts = 0;
-        if (!_otaSetup) {
-            ArduinoOTA.setHostname(_hostname.c_str());
-            ArduinoOTA.setMdnsEnabled(true);
-
-            ArduinoOTA.begin();
-
-            _otaSetup = true;
-        } else {
-            ArduinoOTA.handle();
-        }
     }
 }
 
