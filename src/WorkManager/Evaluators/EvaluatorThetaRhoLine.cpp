@@ -85,7 +85,7 @@ bool EvaluatorThetaRhoLine::execWorkItem(WorkItem &workItem)
     String thetaStr = Utils::getNthField(workItem.getCString(), 1, '/');
     String rhoStr = Utils::getNthField(workItem.getCString(), 2, '/');
     double mirrored = _thetaMirrored ? -1.00 : 1.00;
-    double newTheta = atof(thetaStr.c_str()) * mirrored + (M_PI * _thetaOffsetAngle);
+    double newTheta = atof(thetaStr.c_str()) * mirrored + (M_PI * (_thetaOffsetAngle / 180));
     double newRho = atof(rhoStr.c_str());
 
     // Check for an uninterpolated line
