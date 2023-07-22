@@ -30,7 +30,7 @@ LedStrip::LedStrip(ConfigBase& ledNvValues) : _ledNvValues(ledNvValues) {
 CRGBW LedStrip::getRGBWFromRGB(CRGB rgb) {
     // Reference, currently set to warm light (2700-3000 (2850k)):
     // https://andi-siess.de/rgb-to-color-temperature/
-    const uint8_t kWhiteRedChannel = 255;
+    const uint8_t kWhiteRedChannel = 176;
     const uint8_t kWhiteGreenChannel = 176;
     const uint8_t kWhiteBlueChannel = 97;
 

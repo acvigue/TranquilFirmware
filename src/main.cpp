@@ -40,7 +40,7 @@
 const char* systemType = "Tranquil";
 
 // System version
-const char* systemVersion = "4.2.3";
+const char* systemVersion = "4.2.5";
 
 // Build date
 const char* buildDate = __DATE__;
@@ -63,6 +63,7 @@ const char* buildTime = __TIME__;
 // Config
 #include "ConfigFile.h"
 #include "ConfigNVS.h"
+#include "RobotConfigurations.h"
 
 // WiFi Manager
 #include "WiFiManager.h"
@@ -134,7 +135,8 @@ WebServer webServer(securityConfig);
 
 // REST API System
 #include "RestAPISystem.h"
-RestAPISystem restAPISystem(wifiManager, wireGuardManager, otaUpdate, fileManager, ntpClient, commandScheduler, hwConfig, tranquilConfig, securityConfig, systemType, systemVersion);
+RestAPISystem restAPISystem(wifiManager, wireGuardManager, otaUpdate, fileManager, ntpClient, commandScheduler, hwConfig, tranquilConfig,
+                            securityConfig, systemType, systemVersion);
 
 // Config for LED Strip
 ConfigNVS ledStripConfig("ledStrip", 200);
@@ -182,6 +184,24 @@ void setup() {
     // Robot config
     robotConfig.setup();
 
+    if (robotConfig.getConfigString().equals("{}")) {
+        String defaultConfigType = RdJson::getString("defaultRobotType", "TranquilSmall", hwConfigJSON);
+        Log.infoln("Robot config empty, initializing to %s", defaultConfigType.c_str());
+
+        RobotConfigurations configs;
+        const char* newRobotConfig = configs.getConfig(defaultConfigType.c_str());
+        if(strcmp(newRobotConfig, "{}") != 0) {
+            robotConfig.setConfigData(newRobotConfig);
+            robotConfig.writeConfig();
+            Log.infoln("New config: %s", robotConfig.getConfigCStrPtr());
+            Log.infoln("Set default robot config, restarting...");
+            esp_restart();
+        } else {
+            Log.errorln("Couldn't get default robot config!!");
+            while(1) {}
+        }
+    }
+
     // WiFi Config
     wifiConfig.setup();
 
@@ -203,7 +223,7 @@ void setup() {
     // Security config
     securityConfig.setup();
 
-    //Scheduler config
+    // Scheduler config
     schedulerConfig.setup();
 
     // WiFi Manager
@@ -272,10 +292,10 @@ void loop() {
         String newStatus;
         _workManager.queueIsEmpty();
         _workManager.queryStatus(newStatus);
-        webServer.webSocketSend((uint8_t *) newStatus.c_str(), newStatus.length());
+        webServer.webSocketSend((uint8_t*)newStatus.c_str(), newStatus.length());
         webServer.sendAsyncEvent(newStatus.c_str(), "status");
     }
-    
+
     commandScheduler.service();
     _workManager.service();
     _robotController.service();
