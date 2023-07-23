@@ -1,5 +1,4 @@
-TranquilFirmware
-============
+# TranquilFirmware
 
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/)
 [![CodeFactor](https://www.codefactor.io/repository/github/acvigue/tranquilfirmware/badge)](https://www.codefactor.io/repository/github/acvigue/tranquilfirmware)
@@ -18,6 +17,8 @@ Similarly, wifi/ntp/scheduler/light settings can be changed at
 - /settings/lights < LED lights
 - /settings/security < used to store PIN code
 - /settings/tranquil < only used for storing TranquilAPI encrypted JWT
+
+> LED strip _must_ be attached to GPIO5
 
 ```js
 //See RobotConfig.example.json for an uncommented version.
@@ -62,7 +63,7 @@ Similarly, wifi/ntp/scheduler/light settings can be changed at
         "endStop0": {
             "sensePin": "22", //endstop GPIO pin
             "actLvl": 0, //triggered at what level?
-            "inputType": "INPUT" 
+            "inputType": "INPUT"
         }
       },
       "axis1": { //same as above, changes highlighted
@@ -72,7 +73,7 @@ Similarly, wifi/ntp/scheduler/light settings can be changed at
         "stepsPerRot": 3200,
         "unitsPerRot": 40.5, //for each rotation of the upper central gear, how much does the linear arm move in MM
         "maxVal": 145, //maximum MM the linear arm can go out from center
-        "stepPin": "27", 
+        "stepPin": "27",
         "dirnRev": "1",
         "dirnPin": "3",
         "endStop0": { "sensePin": "23", "actLvl": 0, "inputType": "INPUT" }
@@ -82,7 +83,12 @@ Similarly, wifi/ntp/scheduler/light settings can be changed at
       "spiffsEnabled": 1, //must be 1
       "spiffsFormatIfCorrupt": 1, //self explanatory, i advise against it.
       "sdEnabled": 1, //must be 1
-      "sdLanes": 1 //1 or 4, sets bus width for SDMMC, sdspi is NOT supported atm.
+      "sdSPI": 0, //OPTIONAL, set to 1 for sdspi, if omitted, SDMMC is used.
+      "sdMISO": 0, //REQUIRED FOR SDSPI, omit for SDMMC, miso pin
+      "sdMOSI": 0, //REQUIRED FOR SDSPI, omit for SDMMC, mosi pin
+      "sdCLK": 0, //REQUIRED FOR SDSPI, omit for SDMMC, clock pin
+      "sdCS": 0, //REQUIRED FOR SDSPI, omit for SDMMC, CS pin
+      "sdLanes": 1 //1 or 4, sets bus width for SDMMC, not used for SDSPI
     },
     "ledStrip": {
       "ledRGBW": 1, //1 for SK6812, 0 for ws2812
@@ -93,6 +99,6 @@ Similarly, wifi/ntp/scheduler/light settings can be changed at
     }
   },
   "cmdSched": { "jobs": [] }, //don't edit, doesn't do anything but fw still relies on it being here
-  "name": "Tranquil" //robot name, not hostname, that is set in wifi settings. 
+  "name": "Tranquil" //robot name, not hostname, that is set in wifi settings.
 }
 ```

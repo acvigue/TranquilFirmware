@@ -11,7 +11,6 @@
 #include "driver/sdmmc_defs.h"
 #include "driver/sdmmc_host.h"
 #include "esp_err.h"
-#include "esp_log.h"
 #include "esp_spiffs.h"
 #include "esp_vfs_fat.h"
 #include "sdmmc_cmd.h"
@@ -19,7 +18,7 @@
 
 using namespace fs;
 
-static const char* MODULE_PREFIX = "FileManager: ";
+static const char* MODULE_PREFIX = "FileManager";
 
 void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
     // Init
@@ -31,7 +30,7 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
     String pathStr = "fileManager";
     if (pConfigPath) pathStr = pConfigPath;
     ConfigBase fsConfig(config.getString(pathStr.c_str(), "").c_str());
-    Log.notice("%ssetup %s\n", MODULE_PREFIX, fsConfig.getConfigCStrPtr());
+    ESP_LOGD(MODULE_PREFIX, "setup with config: %s", fsConfig.getConfigCStrPtr());
 
     // See if SPIFFS enabled
     _enableSPIFFS = fsConfig.getLong("spiffsEnabled", 0) != 0;
@@ -49,20 +48,13 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
         // Note: esp_vfs_spiffs_register is an all-in-one convenience function.
         esp_err_t ret = esp_vfs_spiffs_register(&conf);
         if (ret != ESP_OK) {
-            if (ret == ESP_FAIL)
-                Log.warning("%ssetup failed mount/format SPIFFS\n", MODULE_PREFIX);
-            else if (ret == ESP_ERR_NOT_FOUND)
-                Log.warning("%ssetup failed to find SPIFFS partition\n", MODULE_PREFIX);
-            else
-                Log.warning("%ssetup failed to init SPIFFS (error %s)\n", MODULE_PREFIX, esp_err_to_name(ret));
+            ESP_LOGE(MODULE_PREFIX, "setup failed to register SPIFFS!");
+            esp_restart();
         } else {
             // Get SPIFFS info
             size_t total = 0, used = 0;
             esp_err_t ret = esp_spiffs_info(NULL, &total, &used);
-            if (ret != ESP_OK)
-                Log.warning("%ssetup failed to get SPIFFS info (error %s)\n", MODULE_PREFIX, esp_err_to_name(ret));
-            else
-                Log.notice("%ssetup SPIFFS partition size total %d, used %d\n", MODULE_PREFIX, total, used);
+            if (ret == ESP_OK) ESP_LOGI(MODULE_PREFIX, "SPIFFS registered, total size: %d, used: %d", total, used);
 
             // Default to SPIFFS
             _defaultToSPIFFS = true;
@@ -72,52 +64,118 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
 
     // See if SD enabled
     _enableSD = fsConfig.getLong("sdEnabled", 0) != 0;
-
+    bool _sdSPIMode = fsConfig.getLong("sdSPI", 0) != 0;
     // Init SD if enabled
     if (_enableSD) {
-        int sdLanes = fsConfig.getLong("sdLanes", 1);
-        sdmmc_card_t* pCard;
+        ESP_LOGI(MODULE_PREFIX, "setup SD mode %s", (_sdSPIMode ? "SDSPI" : "SDMMC"));
+
         esp_err_t ret;
+        sdmmc_card_t* pCard;
 
-        esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-            .format_if_mount_failed = true,
-            .max_files = 5,
-            .allocation_unit_size = 16 * 1024,
-        };
+        if (_sdSPIMode) {
+            int sdMOSIPin = fsConfig.getLong("sdMOSI", -1);
+            int sdMISOPin = fsConfig.getLong("sdMISO", -1);
+            int sdCLKPin = fsConfig.getLong("sdCLK", -1);
+            int sdCSPin = fsConfig.getLong("sdCS", -1);
 
-        const char mount_point[] = "/sd";
+            // Check valid
+            if (sdMOSIPin == -1 || sdMISOPin == -1 || sdCLKPin == -1 || sdCSPin == -1) {
+                ESP_LOGE(MODULE_PREFIX, "setup SD bad pins");
+                while (1) {
+                }
+            } else {
+                esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+                    .format_if_mount_failed = false,
+                    .max_files = 5,
+                    .allocation_unit_size = 16 * 1024,
+                };
 
-        sdmmc_host_t host = SDMMC_HOST_DEFAULT();
-        host.slot = 1;
-        host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
-        sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
-        slot_config.width = sdLanes;
-        slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
+                const char mount_point[] = "/sd";
 
-        ret = esp_vfs_fat_sdmmc_mount(mount_point, &host, &slot_config, &mount_config, &pCard);
+                sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+                spi_bus_config_t bus_cfg = {
+                    .mosi_io_num = sdMOSIPin,
+                    .miso_io_num = sdMISOPin,
+                    .sclk_io_num = sdCLKPin,
+                    .quadwp_io_num = -1,
+                    .quadhd_io_num = -1,
+                    .max_transfer_sz = 4000,
+                };
+                ret = spi_bus_initialize(SPI3_HOST, &bus_cfg, SDSPI_DEFAULT_DMA);
+                if (ret != ESP_OK) {
+                    ESP_LOGE(MODULE_PREFIX, "bus init error");
+                    esp_restart();
+                }
+
+                // This initializes the slot without card detect (CD) and write protect (WP) signals.
+                // Modify slot_config.gpio_cd and slot_config.gpio_wp if your board has these signals.
+                sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
+                slot_config.gpio_cs = (gpio_num_t)sdCSPin;
+                slot_config.host_id = SPI3_HOST;
+
+                ret = esp_vfs_fat_sdspi_mount(mount_point, &host, &slot_config, &mount_config, &pCard);
+            }
+        } else {
+            int sdLanes = fsConfig.getLong("sdLanes", 1);
+
+            esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+                .format_if_mount_failed = true,
+                .max_files = 5,
+                .allocation_unit_size = 16 * 1024,
+            };
+
+            const char mount_point[] = "/sd";
+
+            sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+            host.slot = 1;
+            host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
+            sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
+            slot_config.width = sdLanes;
+            slot_config.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
+
+            // use internal pullups
+            pinMode(15, INPUT_PULLUP);
+            pinMode(2, INPUT_PULLUP);
+            pinMode(4, INPUT_PULLUP);
+            pinMode(12, INPUT_PULLUP);
+            pinMode(13, INPUT_PULLUP);
+
+            delay(200);
+
+            ret = esp_vfs_fat_sdmmc_mount(mount_point, &host, &slot_config, &mount_config, &pCard);
+        }
 
         if (ret != ESP_OK) {
-            if (ret == ESP_FAIL)
-                Log.warning("%ssetup failed mount SD\n", MODULE_PREFIX);
-            else
-                Log.warning("%ssetup failed to init SD (error %s)\n", MODULE_PREFIX, esp_err_to_name(ret));
+            ESP_LOGE(MODULE_PREFIX, "failed to init SD, error %s", esp_err_to_name(ret));
+            esp_restart();
         } else {
             _pSDCard = pCard;
-            Log.notice("%ssetup SD ok\n", MODULE_PREFIX);
+
+            ESP_LOGI(MODULE_PREFIX, "SD registered");
+
             // Default to SD
             _defaultToSPIFFS = false;
             _sdIsOk = true;
-
-            // Check if we have a manifest file
-            struct stat st;
-            if (stat("/sd/manifest.json", &st) != 0) {
-                Log.notice("%s No manifest file found, creating empty manifest.", MODULE_PREFIX);
-                FILE *pTmpFile = fopen("/sd/manifest.json", "w");
-                const char *fileData = "{\"patterns\":[],\"playlists\":[]}";
-                fwrite(fileData, 1, 30, pTmpFile);
-                fclose(pTmpFile);
-            }
         }
+
+        // Check if we have a manifest file
+        struct stat st;
+        if (stat("/sd/manifest.json", &st) != 0) {
+            ESP_LOGE(MODULE_PREFIX, "creating empty manifest");
+            FILE* pTmpFile = fopen("/sd/manifest.json", "w");
+            const char* fileData = "{\"patterns\":[],\"playlists\":[]}";
+            fwrite(fileData, 1, 30, pTmpFile);
+            fclose(pTmpFile);
+        } else {
+            ESP_LOGI(MODULE_PREFIX, "pattern manifest found");
+        }
+    }
+
+    if (!_spiffsIsOk || !_sdIsOk) {
+        ESP_LOGE(MODULE_PREFIX, "filesystems must both be marked online to continue...");
+        ESP_LOGE(MODULE_PREFIX, "SD: %s", (_spiffsIsOk ? "online" : "offline"));
+        ESP_LOGE(MODULE_PREFIX, "SPIFFS: %s", (_spiffsIsOk ? "online" : "offline"));
+        esp_restart();
     }
 }
 
@@ -137,7 +195,7 @@ void FileManager::reformat(const String& fileSystemStr, String& respStr) {
     esp_err_t ret = esp_spiffs_format(NULL);
     enableCore0WDT();
     Utils::setJsonBoolResult(respStr, ret == ESP_OK);
-    Log.warning("%sReformat SPIFFS result %s\n", MODULE_PREFIX, (ret == ESP_OK ? "OK" : "FAIL"));
+    ESP_LOGW(MODULE_PREFIX, "reformat SPIFFS: %s", (ret == ESP_OK ? "OK" : "FAIL"));
 }
 
 bool FileManager::getFileInfo(const String& fileSystemStr, const String& filename, int& fileLength) {
@@ -193,7 +251,6 @@ bool FileManager::getFilesJSON(const String& fileSystemStr, const String& folder
         esp_err_t ret = esp_spiffs_info(NULL, &sizeBytes, &usedBytes);
         if (ret != ESP_OK) {
             xSemaphoreGive(_fileSysMutex);
-            Log.warning("%sgetFilesJSON Failed to get SPIFFS info (error %s)\n", MODULE_PREFIX, esp_err_to_name(ret));
             respStr = "{\"rslt\":\"fail\",\"error\":\"SPIFFSINFO\",\"files\":[]}";
             return false;
         }
@@ -225,7 +282,7 @@ bool FileManager::getFilesJSON(const String& fileSystemStr, const String& folder
 
     // Check file system is valid
     if (fsSizeBytes == 0) {
-        Log.warning("%sgetFilesJSON No valid file system\n", MODULE_PREFIX);
+        ESP_LOGE(MODULE_PREFIX, "getFilesJSON no valid FS");
         respStr = "{\"rslt\":\"fail\",\"error\":\"NOFS\",\"files\":[]}";
         return false;
     }
@@ -235,7 +292,7 @@ bool FileManager::getFilesJSON(const String& fileSystemStr, const String& folder
     DIR* dir = opendir(rootFolder.c_str());
     if (!dir) {
         xSemaphoreGive(_fileSysMutex);
-        Log.warning("%sgetFilesJSON Failed to open base folder %s\n", MODULE_PREFIX, rootFolder.c_str());
+        ESP_LOGE(MODULE_PREFIX, "getFilesJSON failed to open base folder %s", rootFolder.c_str());
         respStr = "{\"rslt\":\"fail\",\"error\":\"nofolder\",\"files\":[]}";
         return false;
     }
@@ -386,7 +443,7 @@ void FileManager::uploadAPIBlockHandler(const char* fileSystem, const String& re
     String tmpRootFilename = getFilePath(nameOfFS, tempFileName);
 
     // Check if we should overwrite or append
-    if (index == 0) { 
+    if (index == 0) {
         pChunkedFile = NULL;
         pChunkedFile = fopen(tmpRootFilename.c_str(), "wb");
     }
@@ -547,8 +604,8 @@ uint8_t* FileManager::chunkFileNext(String& filename, int& fileLen, int& chunkPo
         }
     }
 
-    Log.verbose("%schunkNext filename %s chunklen %d filePos %d fileLen %d inprog %d final %d byLine %s\n", MODULE_PREFIX, _chunkedFilename.c_str(),
-                chunkLen, _chunkedFilePos, _chunkedFileLen, _chunkedFileInProgress, finalChunk, (_chunkOnLineEndings ? "Y" : "N"));
+    ESP_LOGV(MODULE_PREFIX, "chunkNext filename %s chunklen %d filePos %d fileLen %d inprog %d final %d byLine %s\n", _chunkedFilename.c_str(),
+             chunkLen, _chunkedFilePos, _chunkedFileLen, _chunkedFileInProgress, finalChunk, (_chunkOnLineEndings ? "Y" : "N"));
 
     // Close
     fclose(pFile);
