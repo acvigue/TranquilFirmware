@@ -146,8 +146,9 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
         }
 
         if (ret != ESP_OK) {
+            ESP_LOGE(MODULE_PREFIX, "!!!!!!!!!!!!!!!!!!!!!!!!!!!");
             ESP_LOGE(MODULE_PREFIX, "failed to init SD, error %s", esp_err_to_name(ret));
-            esp_restart();
+            ESP_LOGE(MODULE_PREFIX, "!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         } else {
             _pSDCard = pCard;
 
@@ -172,10 +173,13 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
     }
 
     if (!_spiffsIsOk || !_sdIsOk) {
-        ESP_LOGE(MODULE_PREFIX, "filesystems must both be marked online to continue...");
+        ESP_LOGE(MODULE_PREFIX, "filesystems must both be marked online to ensure functionality...");
         ESP_LOGE(MODULE_PREFIX, "SD: %s", (_spiffsIsOk ? "online" : "offline"));
         ESP_LOGE(MODULE_PREFIX, "SPIFFS: %s", (_spiffsIsOk ? "online" : "offline"));
-        esp_restart();
+        if(!_spiffsIsOk) {
+            //spiffs is MANDATORY, sd can wait for configuration
+            esp_restart();
+        }
     }
 }
 
