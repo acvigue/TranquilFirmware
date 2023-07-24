@@ -335,8 +335,6 @@ void LedStrip::service(float currentX, float currentY) {
                             // Not really a low light level, reset integration time
                             _currentIntegrationMS = 10;
                         }
-                    } else {
-                        Log.error("%sCouldn't get data from TSL2561!\n", MODULE_PREFIX);
                     }
                 }
             }

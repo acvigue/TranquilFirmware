@@ -18,7 +18,7 @@
 
 using namespace fs;
 
-static const char* MODULE_PREFIX = "FileManager";
+static const char* TAG = "FileManager";
 
 void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
     // Init
@@ -30,7 +30,7 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
     String pathStr = "fileManager";
     if (pConfigPath) pathStr = pConfigPath;
     ConfigBase fsConfig(config.getString(pathStr.c_str(), "").c_str());
-    ESP_LOGD(MODULE_PREFIX, "setup with config: %s", fsConfig.getConfigCStrPtr());
+    ESP_LOGD(TAG, "setup with config: %s", fsConfig.getConfigCStrPtr());
 
     // See if SPIFFS enabled
     _enableSPIFFS = fsConfig.getLong("spiffsEnabled", 0) != 0;
@@ -48,13 +48,13 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
         // Note: esp_vfs_spiffs_register is an all-in-one convenience function.
         esp_err_t ret = esp_vfs_spiffs_register(&conf);
         if (ret != ESP_OK) {
-            ESP_LOGE(MODULE_PREFIX, "setup failed to register SPIFFS!");
+            ESP_LOGE(TAG, "setup failed to register SPIFFS!");
             esp_restart();
         } else {
             // Get SPIFFS info
             size_t total = 0, used = 0;
             esp_err_t ret = esp_spiffs_info(NULL, &total, &used);
-            if (ret == ESP_OK) ESP_LOGI(MODULE_PREFIX, "SPIFFS registered, total size: %d, used: %d", total, used);
+            if (ret == ESP_OK) ESP_LOGI(TAG, "SPIFFS registered, total size: %d, used: %d", total, used);
 
             // Default to SPIFFS
             _defaultToSPIFFS = true;
@@ -67,7 +67,7 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
     bool _sdSPIMode = fsConfig.getLong("sdSPI", 0) != 0;
     // Init SD if enabled
     if (_enableSD) {
-        ESP_LOGI(MODULE_PREFIX, "setup SD mode %s", (_sdSPIMode ? "SDSPI" : "SDMMC"));
+        ESP_LOGI(TAG, "setup SD mode %s", (_sdSPIMode ? "SDSPI" : "SDMMC"));
 
         esp_err_t ret;
         sdmmc_card_t* pCard;
@@ -80,10 +80,11 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
 
             // Check valid
             if (sdMOSIPin == -1 || sdMISOPin == -1 || sdCLKPin == -1 || sdCSPin == -1) {
-                ESP_LOGE(MODULE_PREFIX, "setup SD bad pins");
+                ESP_LOGE(TAG, "setup SD bad pins");
                 while (1) {
                 }
             } else {
+                ESP_LOGI(TAG, "setup SDSPI pins MOSI:%d MISO:%d CLK:%d CS:%d", sdMOSIPin, sdMISOPin, sdCLKPin, sdCSPin);
                 esp_vfs_fat_sdmmc_mount_config_t mount_config = {
                     .format_if_mount_failed = false,
                     .max_files = 5,
@@ -103,7 +104,7 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
                 };
                 ret = spi_bus_initialize(SPI3_HOST, &bus_cfg, SDSPI_DEFAULT_DMA);
                 if (ret != ESP_OK) {
-                    ESP_LOGE(MODULE_PREFIX, "bus init error");
+                    ESP_LOGE(TAG, "SPI bus init error: %s", esp_err_to_name(ret));
                     esp_restart();
                 }
 
@@ -146,38 +147,38 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
         }
 
         if (ret != ESP_OK) {
-            ESP_LOGE(MODULE_PREFIX, "!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            ESP_LOGE(MODULE_PREFIX, "failed to init SD, error %s", esp_err_to_name(ret));
-            ESP_LOGE(MODULE_PREFIX, "!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            ESP_LOGE(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            ESP_LOGE(TAG, "failed to init SD, error %s", esp_err_to_name(ret));
+            ESP_LOGE(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         } else {
             _pSDCard = pCard;
 
-            ESP_LOGI(MODULE_PREFIX, "SD registered");
+            ESP_LOGI(TAG, "SD registered");
 
             // Default to SD
             _defaultToSPIFFS = false;
             _sdIsOk = true;
-        }
 
-        // Check if we have a manifest file
-        struct stat st;
-        if (stat("/sd/manifest.json", &st) != 0) {
-            ESP_LOGE(MODULE_PREFIX, "creating empty manifest");
-            FILE* pTmpFile = fopen("/sd/manifest.json", "w");
-            const char* fileData = "{\"patterns\":[],\"playlists\":[]}";
-            fwrite(fileData, 1, 30, pTmpFile);
-            fclose(pTmpFile);
-        } else {
-            ESP_LOGI(MODULE_PREFIX, "pattern manifest found");
+            // Check if we have a manifest file
+            struct stat st;
+            if (stat("/sd/manifest.json", &st) != 0) {
+                ESP_LOGE(TAG, "creating empty manifest");
+                FILE* pTmpFile = fopen("/sd/manifest.json", "w");
+                const char* fileData = "{\"patterns\":[],\"playlists\":[]}";
+                fwrite(fileData, 1, 30, pTmpFile);
+                fclose(pTmpFile);
+            } else {
+                ESP_LOGI(TAG, "pattern manifest found");
+            }
         }
     }
 
     if (!_spiffsIsOk || !_sdIsOk) {
-        ESP_LOGE(MODULE_PREFIX, "filesystems must both be marked online to ensure functionality...");
-        ESP_LOGE(MODULE_PREFIX, "SD: %s", (_spiffsIsOk ? "online" : "offline"));
-        ESP_LOGE(MODULE_PREFIX, "SPIFFS: %s", (_spiffsIsOk ? "online" : "offline"));
-        if(!_spiffsIsOk) {
-            //spiffs is MANDATORY, sd can wait for configuration
+        ESP_LOGE(TAG, "filesystems must both be marked online to ensure functionality...");
+        ESP_LOGE(TAG, "SD: %s", (_sdIsOk ? "online" : "offline"));
+        ESP_LOGE(TAG, "SPIFFS: %s", (_spiffsIsOk ? "online" : "offline"));
+        if (!_spiffsIsOk) {
+            // spiffs is MANDATORY, sd can wait for configuration
             esp_restart();
         }
     }
@@ -199,7 +200,7 @@ void FileManager::reformat(const String& fileSystemStr, String& respStr) {
     esp_err_t ret = esp_spiffs_format(NULL);
     enableCore0WDT();
     Utils::setJsonBoolResult(respStr, ret == ESP_OK);
-    ESP_LOGW(MODULE_PREFIX, "reformat SPIFFS: %s", (ret == ESP_OK ? "OK" : "FAIL"));
+    ESP_LOGW(TAG, "reformat SPIFFS: %s", (ret == ESP_OK ? "OK" : "FAIL"));
 }
 
 bool FileManager::getFileInfo(const String& fileSystemStr, const String& filename, int& fileLength) {
@@ -286,7 +287,7 @@ bool FileManager::getFilesJSON(const String& fileSystemStr, const String& folder
 
     // Check file system is valid
     if (fsSizeBytes == 0) {
-        ESP_LOGE(MODULE_PREFIX, "getFilesJSON no valid FS");
+        ESP_LOGE(TAG, "getFilesJSON no valid FS");
         respStr = "{\"rslt\":\"fail\",\"error\":\"NOFS\",\"files\":[]}";
         return false;
     }
@@ -296,7 +297,7 @@ bool FileManager::getFilesJSON(const String& fileSystemStr, const String& folder
     DIR* dir = opendir(rootFolder.c_str());
     if (!dir) {
         xSemaphoreGive(_fileSysMutex);
-        ESP_LOGE(MODULE_PREFIX, "getFilesJSON failed to open base folder %s", rootFolder.c_str());
+        ESP_LOGE(TAG, "getFilesJSON failed to open base folder %s", rootFolder.c_str());
         respStr = "{\"rslt\":\"fail\",\"error\":\"nofolder\",\"files\":[]}";
         return false;
     }
@@ -608,7 +609,7 @@ uint8_t* FileManager::chunkFileNext(String& filename, int& fileLen, int& chunkPo
         }
     }
 
-    ESP_LOGV(MODULE_PREFIX, "chunkNext filename %s chunklen %d filePos %d fileLen %d inprog %d final %d byLine %s\n", _chunkedFilename.c_str(),
+    ESP_LOGV(TAG, "chunkNext filename %s chunklen %d filePos %d fileLen %d inprog %d final %d byLine %s\n", _chunkedFilename.c_str(),
              chunkLen, _chunkedFilePos, _chunkedFileLen, _chunkedFileInProgress, finalChunk, (_chunkOnLineEndings ? "Y" : "N"));
 
     // Close
