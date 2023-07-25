@@ -154,6 +154,7 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
             _pSDCard = pCard;
 
             ESP_LOGI(TAG, "SD registered");
+            sdmmc_card_print_info(stdout, pCard);
 
             // Default to SD
             _defaultToSPIFFS = false;
@@ -609,8 +610,8 @@ uint8_t* FileManager::chunkFileNext(String& filename, int& fileLen, int& chunkPo
         }
     }
 
-    ESP_LOGV(TAG, "chunkNext filename %s chunklen %d filePos %d fileLen %d inprog %d final %d byLine %s\n", _chunkedFilename.c_str(),
-             chunkLen, _chunkedFilePos, _chunkedFileLen, _chunkedFileInProgress, finalChunk, (_chunkOnLineEndings ? "Y" : "N"));
+    ESP_LOGV(TAG, "chunkNext filename %s chunklen %d filePos %d fileLen %d inprog %d final %d byLine %s\n", _chunkedFilename.c_str(), chunkLen,
+             _chunkedFilePos, _chunkedFileLen, _chunkedFileInProgress, finalChunk, (_chunkOnLineEndings ? "Y" : "N"));
 
     // Close
     fclose(pFile);
