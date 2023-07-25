@@ -246,7 +246,11 @@ void setup() {
     webServer.setup(hwConfig);
     webServer.addEndpoints(restAPIEndpoints);
     webServer.serveStaticFiles("/", "/spiffs/", "public, max-age=31536000");
-    webServer.serveStaticFiles("/files/sd", "/sd/");
+    if(fileManager._sdIsOk) {
+        webServer.serveStaticFiles("/files/sd", "/sd/");
+    } else {
+        ESP_LOGE("main", "WEB APP WILL NOT FUNCTION PROPERLY WITHOUT AN ATTACHED SD CARD.");
+    }
     webServer.enableAsyncEvents("/events");
     webServer.webSocketOpen("/socket");
 
