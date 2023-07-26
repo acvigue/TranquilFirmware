@@ -198,7 +198,7 @@ void setup() {
             esp_restart();
         } else {
             Log.errorln("Couldn't get default robot config!!");
-            while(1) {}
+            return;
         }
     }
 

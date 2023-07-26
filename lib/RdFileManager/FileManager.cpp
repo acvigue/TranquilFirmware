@@ -81,8 +81,7 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
             // Check valid
             if (sdMOSIPin == -1 || sdMISOPin == -1 || sdCLKPin == -1 || sdCSPin == -1) {
                 ESP_LOGE(TAG, "setup SD bad pins");
-                while (1) {
-                }
+                return;
             } else {
                 ESP_LOGI(TAG, "setup SDSPI pins MOSI:%d MISO:%d CLK:%d CS:%d", sdMOSIPin, sdMISOPin, sdCLKPin, sdCSPin);
                 esp_vfs_fat_sdmmc_mount_config_t mount_config = {
@@ -94,6 +93,7 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
                 const char mount_point[] = "/sd";
 
                 sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+
                 spi_bus_config_t bus_cfg = {
                     .mosi_io_num = sdMOSIPin,
                     .miso_io_num = sdMISOPin,

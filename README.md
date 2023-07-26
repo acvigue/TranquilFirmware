@@ -5,6 +5,10 @@
 
 Firmware for the ESP32-based Tranquil kinetic sand drawing robots
 
+## Debugging
+
+Add `-DCORE_DEBUG_LEVEL=5` to platformio.ini and set the logging level to LOG_LEVEL_VERBOSE in main.cpp
+
 ## Robot Configuration Reference
 
 Robot configuration is stored in NVRAM and can be viewed by sending GET request to `/settings/robot` and can be changed by POSTing JSON to `/settings/robot`
