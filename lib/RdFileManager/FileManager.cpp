@@ -100,7 +100,6 @@ void FileManager::setup(ConfigBase& config, const char* pConfigPath) {
                     .sclk_io_num = sdCLKPin,
                     .quadwp_io_num = -1,
                     .quadhd_io_num = -1,
-                    .max_transfer_sz = 4000,
                 };
                 ret = spi_bus_initialize(SPI3_HOST, &bus_cfg, SDSPI_DEFAULT_DMA);
                 if (ret != ESP_OK) {
