@@ -3,11 +3,25 @@
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/)
 [![CodeFactor](https://www.codefactor.io/repository/github/acvigue/tranquilfirmware/badge)](https://www.codefactor.io/repository/github/acvigue/tranquilfirmware)
 
-Firmware for the ESP32-based Tranquil kinetic sand drawing robots
+Firmware for the ESP32-based Tranquil kinetic sand drawing robots.
 
-## Debugging
+## Requirements
 
-Add `-DCORE_DEBUG_LEVEL=5` to platformio.ini and set the logging level to LOG_LEVEL_VERBOSE in main.cpp
+This is *not* a drop-in replacement for Rob Dobson's original RBotFirmware! Many things have been changed/moved around.
+
+Hardware:
+- Stepper drivers (preferably TMC2208/2209, generics can be used)
+- Endstops
+- ESP32, must have at least 4MB flash for proper OTA operation
+- SD Card - can either use MMC mode or SPI mode, SPI mode can use any pins, albeit is much slower.
+
+> This project requires an operational [TranquilAPI](https://github.com/acvigue/TranquilAPI) server! Run your own on CloudFlare Workers!
+
+## Notes
+
+The firmware is setup to automatically check for updates from a central server. The firmware binaries are built upon commit to this repository and are automatically uploaded to the OTA server.
+
+See [cloudflare-ota-server](https://github.com/acvigue/cloudflare-ota-server) for more information. 
 
 ## Robot Configuration Reference
 
