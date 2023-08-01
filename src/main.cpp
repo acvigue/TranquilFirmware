@@ -40,7 +40,7 @@
 const char* systemType = "Tranquil";
 
 // System version
-const char* systemVersion = "4.5.5";
+const char* systemVersion = "4.6.0";
 
 // Build date
 const char* buildDate = __DATE__;
