@@ -136,7 +136,7 @@ WebServer webServer(securityConfig);
 // REST API System
 #include "RestAPISystem.h"
 RestAPISystem restAPISystem(wifiManager, wireGuardManager, otaUpdate, fileManager, ntpClient, commandScheduler, hwConfig, tranquilConfig,
-                            securityConfig, systemType, systemVersion);
+                            securityConfig, systemType, systemVersion, webServer);
 
 // Config for LED Strip
 ConfigNVS ledStripConfig("ledStrip", 200);

@@ -10,8 +10,8 @@ static const char *MODULE_PREFIX = "RestAPISystem: ";
 String RestAPISystem::_systemVersion;
 
 RestAPISystem::RestAPISystem(WiFiManager &wifiManager, WireGuardManager &wireGuardManager, RdOTAUpdate &otaUpdate, FileManager &fileManager,
-                             NTPClient &ntpClient, CommandScheduler &commandScheduler, ConfigBase &hwConfig, ConfigBase &tranquilConfig, ConfigBase &securityConfig,
-                             const char *systemType, const char *systemVersion)
+                             NTPClient &ntpClient, CommandScheduler &commandScheduler, ConfigBase &hwConfig, ConfigBase &tranquilConfig,
+                             ConfigBase &securityConfig, const char *systemType, const char *systemVersion, WebServer &webServer)
     : _wifiManager(wifiManager),
       _wireGuardManager(wireGuardManager),
       _otaUpdate(otaUpdate),
@@ -20,7 +20,8 @@ RestAPISystem::RestAPISystem(WiFiManager &wifiManager, WireGuardManager &wireGua
       _commandScheduler(commandScheduler),
       _hwConfig(hwConfig),
       _tranquilConfig(tranquilConfig),
-      _securityConfig(securityConfig) {
+      _securityConfig(securityConfig),
+      _webServer(webServer) {
     _deviceRestartPending = false;
     _deviceRestartMs = 0;
     _updateCheckPending = false;
@@ -96,7 +97,7 @@ void RestAPISystem::setup(RestAPIEndpoints &endpoints) {
                           "Set security configuration", "application/json", NULL, true, NULL,
                           std::bind(&RestAPISystem::apiPostSecurityConfigBody, this, std::placeholders::_1, std::placeholders::_2,
                                     std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
-    
+
     // Scheduler settings
     endpoints.addEndpoint("settings/scheduler", RestAPIEndpointDef::ENDPOINT_CALLBACK, RestAPIEndpointDef::ENDPOINT_GET,
                           std::bind(&RestAPISystem::apiGetSchedulerConfig, this, std::placeholders::_1, std::placeholders::_2),
@@ -334,7 +335,6 @@ void RestAPISystem::apiPostSecurityConfigBody(String &reqStr, uint8_t *pData, si
     }
 }
 
-
 // MARK: Tranquil
 void RestAPISystem::apiGetTranquilConfig(String &reqStr, String &respStr) {
     // Get config
@@ -449,5 +449,17 @@ void RestAPISystem::apiUploadToFileManComplete(String &reqStr, String &respStr) 
 // Upload file to file system - part of file (from HTTP POST file)
 void RestAPISystem::apiUploadToFileManPart(String &req, String &filename, size_t contentLen, size_t index, uint8_t *data, size_t len,
                                            bool finalBlock) {
-    if (contentLen > 0) _fileManager.uploadAPIBlockHandler("", req, filename, contentLen, index, data, len, finalBlock);
+    if (contentLen > 0) {
+        if (index == 0) {
+            _lastUploadProg = 0;
+        }
+        int prog = (index / contentLen) * 100;
+        if (prog != _lastUploadProg) {
+            _lastUploadProg = prog;
+            char pBuf[25];
+            snprintf(pBuf, 25, "{\"uploadProgress\": %d}", prog);
+            _webServer.webSocketSend((uint8_t *)pBuf, strlen(pBuf));
+        }
+        _fileManager.uploadAPIBlockHandler("", req, filename, contentLen, index, data, len, finalBlock);
+    }
 }

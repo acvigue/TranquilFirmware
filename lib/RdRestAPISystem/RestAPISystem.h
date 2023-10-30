@@ -12,6 +12,7 @@
 #include "RestAPIEndpoints.h"
 #include "WireGuardManager.h"
 #include "CommandScheduler.h"
+#include "WebServer.h"
 
 class RestAPISystem {
    private:
@@ -20,6 +21,7 @@ class RestAPISystem {
     static const int DEVICE_RESTART_DELAY_MS = 1000;
     bool _updateCheckPending;
     unsigned long _updateCheckMs;
+    unsigned int _lastUploadProg = 0; 
     uint8_t _tmpReqBodyBuf[600];
 
     // Delay before starting an update check
@@ -38,10 +40,11 @@ class RestAPISystem {
     ConfigBase &_securityConfig;
     String _systemType;
     static String _systemVersion;
+    WebServer &_webServer;
 
    public:
     RestAPISystem(WiFiManager &wifiManager, WireGuardManager &wireGuardManager, RdOTAUpdate &otaUpdate, FileManager &fileManager,
-                  NTPClient &ntpClient, CommandScheduler &commandScheduler, ConfigBase &hwConfig, ConfigBase &tranquilConfig, ConfigBase &securityConfig, const char *systemType, const char *systemVersion);
+                  NTPClient &ntpClient, CommandScheduler &commandScheduler, ConfigBase &hwConfig, ConfigBase &tranquilConfig, ConfigBase &securityConfig, const char *systemType, const char *systemVersion, WebServer &webServer);
 
     // Setup and status
     void setup(RestAPIEndpoints &endpoints);
