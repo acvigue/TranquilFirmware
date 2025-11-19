@@ -5,6 +5,8 @@
 
 Firmware for the ESP32-based Tranquil kinetic sand drawing robots.
 
+# This project has been Archived. Please see [here](https://github.com/koiosdigital/Tranquil-fw) for the latest firmware.
+
 ## Requirements
 
 This is *not* a drop-in replacement for Rob Dobson's original RBotFirmware! Many things have been changed/moved around.
